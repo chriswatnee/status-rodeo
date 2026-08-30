@@ -46,8 +46,14 @@ async function loadStatus() {
     .order('created_at', { ascending: false })
     .limit(1);
 
-  console.log('data:', data);
-  console.log('error:', error);
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  if (data.length > 0) {
+    statusText.textContent = data[0].content;
+  }
 }
 
 loadStatus();
