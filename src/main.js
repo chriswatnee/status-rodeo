@@ -1,4 +1,4 @@
-import './style.css'
+import './style.css';
 
 document.querySelector('#app').innerHTML = `
   <main class="site">
@@ -20,4 +20,19 @@ document.querySelector('#app').innerHTML = `
       </article>
     </section>
   </main>
-`
+`;
+
+const statusInput = document.querySelector('#status-input');
+const postButton = document.querySelector('.composer button');
+const statusText = document.querySelector('.status p');
+
+postButton.addEventListener('click', () => {
+  const content = statusInput.value.trim();
+
+  if (!content) {
+    return;
+  }
+
+  statusText.textContent = content;
+  statusInput.value = '';
+});
