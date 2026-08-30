@@ -1,4 +1,5 @@
 import './style.css';
+import { supabase } from './supabase.js';
 
 document.querySelector('#app').innerHTML = `
   <main class="site">
@@ -36,3 +37,17 @@ postButton.addEventListener('click', () => {
   statusText.textContent = content;
   statusInput.value = '';
 });
+
+async function loadStatus() {
+  const { data, error } = await supabase
+    .from('statuses')
+    .select('*')
+    .eq('visibility', 'public')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  console.log('data:', data);
+  console.log('error:', error);
+}
+
+loadStatus();
