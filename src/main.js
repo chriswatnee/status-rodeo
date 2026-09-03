@@ -8,7 +8,7 @@ document.querySelector('#app').innerHTML = `
       <p>A tiny status service.</p>
     </header>
 
-    <section class="login">
+    <section id="login" class="login">
       <label for="email-input">Email</label>
       <input id="email-input" type="email" />
 
@@ -18,7 +18,11 @@ document.querySelector('#app').innerHTML = `
       <button type="button">Sign in</button>
     </section>
 
-    <section class="composer">
+    <p id="auth-status"></p>
+
+    <button id="sign-out-button" type="button" hidden>Sign out</button>
+
+    <section class="composer" hidden>
       <label for="status-input">What's your status?</label>
       <textarea id="status-input" rows="3" placeholder="This ain't my first rodeo."></textarea>
       <button type="button">Post status</button>
@@ -33,12 +37,30 @@ document.querySelector('#app').innerHTML = `
   </main>
 `;
 
+const loginSection = document.querySelector('#login');
+const composer = document.querySelector('.composer');
+const signOutButton = document.querySelector('#sign-out-button');
+const authStatus = document.querySelector('#auth-status');
 const statusInput = document.querySelector('#status-input');
 const postButton = document.querySelector('.composer button');
 const statusText = document.querySelector('.status p');
 const emailInput = document.querySelector('#email-input');
 const passwordInput = document.querySelector('#password-input');
 const signInButton = document.querySelector('.login button');
+
+function updateAuthUI(session) {
+  if (session) {
+    loginSection.hidden = true;
+    composer.hidden = false;
+    signOutButton.hidden = false;
+    authStatus.textContent = 'Signed in';
+  } else {
+    loginSection.hidden = false;
+    composer.hidden = true;
+    signOutButton.hidden = true;
+    authStatus.textContent = '';
+  }
+}
 
 postButton.addEventListener('click', () => {
   const content = statusInput.value.trim();
@@ -77,8 +99,35 @@ async function signIn() {
     password: passwordInput.value,
   });
 
-  console.log('sign in data:', data);
-  console.log('sign in error:', error);
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  updateAuthUI(data.session);
 }
 
 signInButton.addEventListener('click', signIn);
+
+async function signOut() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  emailInput.value = '';
+  passwordInput.value = '';
+  updateAuthUI(null);
+}
+
+signOutButton.addEventListener('click', signOut);
+
+async function loadSession() {
+  const { data } = await supabase.auth.getSession();
+
+  updateAuthUI(data.session);
+}
+
+loadSession();
