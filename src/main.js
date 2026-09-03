@@ -8,6 +8,16 @@ document.querySelector('#app').innerHTML = `
       <p>A tiny status service.</p>
     </header>
 
+    <section class="login">
+      <label for="email-input">Email</label>
+      <input id="email-input" type="email" />
+
+      <label for="password-input">Password</label>
+      <input id="password-input" type="password" />
+
+      <button type="button">Sign in</button>
+    </section>
+
     <section class="composer">
       <label for="status-input">What's your status?</label>
       <textarea id="status-input" rows="3" placeholder="This ain't my first rodeo."></textarea>
@@ -26,6 +36,9 @@ document.querySelector('#app').innerHTML = `
 const statusInput = document.querySelector('#status-input');
 const postButton = document.querySelector('.composer button');
 const statusText = document.querySelector('.status p');
+const emailInput = document.querySelector('#email-input');
+const passwordInput = document.querySelector('#password-input');
+const signInButton = document.querySelector('.login button');
 
 postButton.addEventListener('click', () => {
   const content = statusInput.value.trim();
@@ -57,3 +70,15 @@ async function loadStatus() {
 }
 
 loadStatus();
+
+async function signIn() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: emailInput.value,
+    password: passwordInput.value,
+  });
+
+  console.log('sign in data:', data);
+  console.log('sign in error:', error);
+}
+
+signInButton.addEventListener('click', signIn);
