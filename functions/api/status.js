@@ -23,5 +23,9 @@ export async function onRequest({ env }) {
     );
   }
 
-  return Response.json(data);
+  return Response.json(data, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }
