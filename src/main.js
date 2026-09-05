@@ -62,16 +62,39 @@ function updateAuthUI(session) {
   }
 }
 
-postButton.addEventListener('click', () => {
+async function postStatus() {
   const content = statusInput.value.trim();
 
   if (!content) {
     return;
   }
 
-  statusText.textContent = content;
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const user = data.user;
+
+  const { error: insertError } = await supabase
+    .from('statuses')
+    .insert({
+      user_id: user.id,
+      content,
+    });
+
+  if (insertError) {
+    console.error(insertError);
+    return;
+  }
+
   statusInput.value = '';
-});
+  await loadStatus();
+}
+
+postButton.addEventListener('click', postStatus);
 
 async function loadStatus() {
   const { data, error } = await supabase
