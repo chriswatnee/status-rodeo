@@ -44,6 +44,7 @@ const authStatus = document.querySelector('#auth-status');
 const statusInput = document.querySelector('#status-input');
 const postButton = document.querySelector('.composer button');
 const statusText = document.querySelector('.status p');
+const statusTime = document.querySelector('.status time');
 const emailInput = document.querySelector('#email-input');
 const passwordInput = document.querySelector('#password-input');
 const signInButton = document.querySelector('.login button');
@@ -110,7 +111,16 @@ async function loadStatus() {
   }
 
   if (data.length > 0) {
-    statusText.textContent = data[0].content;
+    const status = data[0];
+
+    statusText.textContent = status.content;
+    statusTime.dateTime = status.created_at;
+    statusTime.textContent = new Date(status.created_at).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 }
 
