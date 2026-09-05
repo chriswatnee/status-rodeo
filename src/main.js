@@ -28,12 +28,7 @@ document.querySelector('#app').innerHTML = `
       <button type="button">Post status</button>
     </section>
 
-    <section class="feed">
-      <article class="status">
-        <p>This ain't my first rodeo.</p>
-        <time datetime="2026-08-28T21:00">just now</time>
-      </article>
-    </section>
+    <section class="feed"></section>
   </main>
 `;
 
@@ -43,8 +38,7 @@ const signOutButton = document.querySelector('#sign-out-button');
 const authStatus = document.querySelector('#auth-status');
 const statusInput = document.querySelector('#status-input');
 const postButton = document.querySelector('.composer button');
-const statusText = document.querySelector('.status p');
-const statusTime = document.querySelector('.status time');
+const feed = document.querySelector('.feed');
 const emailInput = document.querySelector('#email-input');
 const passwordInput = document.querySelector('#password-input');
 const signInButton = document.querySelector('.login button');
@@ -103,24 +97,33 @@ async function loadStatus() {
     .select('*')
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
-    .limit(1);
+    .limit(5);
 
   if (error) {
     console.error(error);
     return;
   }
 
-  if (data.length > 0) {
-    const status = data[0];
+  feed.innerHTML = '';
 
-    statusText.textContent = status.content;
-    statusTime.dateTime = status.created_at;
-    statusTime.textContent = new Date(status.created_at).toLocaleString('en-US', {
+  for (const status of data) {
+    const article = document.createElement('article');
+    article.className = 'status';
+
+    const paragraph = document.createElement('p');
+    paragraph.textContent = status.content;
+
+    const time = document.createElement('time');
+    time.dateTime = status.created_at;
+    time.textContent = new Date(status.created_at).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
     });
+
+    article.append(paragraph, time);
+    feed.append(article);
   }
 }
 
