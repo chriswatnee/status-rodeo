@@ -18,13 +18,15 @@ document.querySelector('#app').innerHTML = `
       <button type="button">Sign in</button>
     </section>
 
-    <p id="auth-status"></p>
-
-    <button id="sign-out-button" type="button" hidden>Sign out</button>
+    <div class="auth-info">
+      <span id="auth-status"></span>
+      <span id="auth-separator" hidden>·</span>
+      <button id="sign-out-button" type="button" hidden>Sign out</button>
+    </div>
 
     <section class="composer" hidden>
       <label for="status-input">What's your status?</label>
-      <textarea id="status-input" rows="3" placeholder="This ain't my first rodeo."></textarea>
+      <textarea id="status-input" rows="2" placeholder="This ain't my first rodeo."></textarea>
       <button type="button">Post status</button>
     </section>
 
@@ -36,6 +38,7 @@ const loginSection = document.querySelector('#login');
 const composer = document.querySelector('.composer');
 const signOutButton = document.querySelector('#sign-out-button');
 const authStatus = document.querySelector('#auth-status');
+const authSeparator = document.querySelector('#auth-separator');
 const statusInput = document.querySelector('#status-input');
 const postButton = document.querySelector('.composer button');
 const feed = document.querySelector('.feed');
@@ -48,11 +51,13 @@ function updateAuthUI(session) {
     loginSection.hidden = true;
     composer.hidden = false;
     signOutButton.hidden = false;
+    authSeparator.hidden = false;
     authStatus.textContent = 'Signed in';
   } else {
     loginSection.hidden = false;
     composer.hidden = true;
     signOutButton.hidden = true;
+    authSeparator.hidden = true;
     authStatus.textContent = '';
   }
 }

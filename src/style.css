@@ -13,6 +13,7 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
 }
@@ -24,7 +25,7 @@ textarea {
 }
 
 .site-header {
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .site-header h1 {
@@ -36,10 +37,49 @@ textarea {
   margin: 8px 0 0;
 }
 
+.login {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.login input {
+  box-sizing: border-box;
+  width: 180px;
+  padding: 6px 8px;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+.login button {
+  padding: 6px 12px;
+  border: 1px solid #222;
+  background: #222;
+  color: #f5f2e8;
+  cursor: pointer;
+}
+
+.auth-info {
+  margin-bottom: 28px;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+#sign-out-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #222;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .composer {
   display: grid;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 8px;
+  margin-bottom: 32px;
 }
 
 .composer label {
@@ -49,17 +89,22 @@ textarea {
 .composer textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: 12px;
+  min-height: 72px;
+  padding: 10px 12px;
   resize: vertical;
 }
 
 .composer button {
   justify-self: start;
-  padding: 8px 16px;
+  padding: 8px 14px;
+  border: 1px solid #222;
+  background: #222;
+  color: #f5f2e8;
+  cursor: pointer;
 }
 
 .status {
-  padding-top: 24px;
+  padding: 24px 0;
   border-top: 1px solid #aaa;
 }
 
