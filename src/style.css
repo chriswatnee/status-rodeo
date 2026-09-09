@@ -38,22 +38,21 @@ textarea {
 }
 
 .login {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
   gap: 8px;
   margin-bottom: 32px;
 }
 
 .login input {
   box-sizing: border-box;
-  width: 180px;
+  width: 100%;
   padding: 6px 8px;
   border: 1px solid #aaa;
   background: #fff;
 }
 
 .login button {
+  justify-self: start;
   padding: 6px 12px;
   border: 1px solid #222;
   background: #222;
@@ -115,4 +114,15 @@ textarea {
 
 .status time {
   font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .login {
+    display: flex;
+    align-items: center;
+  }
+
+  .login input {
+    width: 180px;
+  }
 }
