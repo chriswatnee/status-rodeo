@@ -99,7 +99,12 @@ postButton.addEventListener('click', postStatus);
 async function loadStatus() {
   const { data, error } = await supabase
     .from('statuses')
-    .select('*')
+    .select(`
+      *,
+      profiles (
+        display_name
+      )
+    `)
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(5);
@@ -115,6 +120,9 @@ async function loadStatus() {
     const article = document.createElement('article');
     article.className = 'status';
 
+    const name = document.createElement('strong');
+    name.textContent = status.profiles.display_name;
+
     const paragraph = document.createElement('p');
     paragraph.textContent = status.content;
 
@@ -127,7 +135,7 @@ async function loadStatus() {
       minute: '2-digit',
     });
 
-    article.append(paragraph, time);
+    article.append(name, paragraph, time);
     feed.append(article);
   }
 }
