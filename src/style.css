@@ -33,6 +33,15 @@ textarea {
   font-size: 2.5rem;
 }
 
+.site-header h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-header h1 a:hover {
+  text-decoration: underline;
+}
+
 .site-header p {
   margin: 8px 0 0;
 }
@@ -102,9 +111,33 @@ textarea {
   cursor: pointer;
 }
 
+.profile {
+  margin-bottom: 32px;
+}
+
+.profile h2 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.profile p {
+  margin: 6px 0 0;
+  color: #666;
+}
+
 .status {
   padding: 24px 0;
   border-top: 1px solid #aaa;
+}
+
+.status > a {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+.status > a:hover {
+  text-decoration: underline;
 }
 
 .status p {
