@@ -1,7 +1,15 @@
 :root {
   font-family: system-ui, sans-serif;
-  color: #222;
-  background: #f5f2e8;
+  color: #3b2b20;
+  background: #f3ead7;
+
+  --cream: #f3ead7;
+  --paper: #fffaf0;
+  --brown: #3b2b20;
+  --rust: #a74724;
+  --blue: #245b9e;
+  --border: #b8a88d;
+  --muted: #746655;
 }
 
 body {
@@ -10,6 +18,10 @@ body {
 
 [hidden] {
   display: none !important;
+}
+
+a {
+  color: var(--blue);
 }
 
 button,
@@ -34,7 +46,7 @@ textarea {
 }
 
 .site-header h1 a {
-  color: inherit;
+  color: var(--brown);
   text-decoration: none;
 }
 
@@ -44,6 +56,7 @@ textarea {
 
 .site-header p {
   margin: 8px 0 0;
+  color: var(--muted);
 }
 
 .app-layout {
@@ -52,7 +65,7 @@ textarea {
 }
 
 .sidebar {
-  border-bottom: 1px solid #aaa;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 24px;
 }
 
@@ -62,7 +75,7 @@ textarea {
 }
 
 .site-nav a {
-  color: inherit;
+  color: var(--blue);
 }
 
 .main-content {
@@ -79,30 +92,31 @@ textarea {
   box-sizing: border-box;
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #aaa;
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--brown);
 }
 
 .login button {
   justify-self: start;
   padding: 6px 12px;
-  border: 1px solid #222;
-  background: #222;
-  color: #f5f2e8;
+  border: 1px solid var(--rust);
+  background: var(--rust);
+  color: var(--paper);
   cursor: pointer;
 }
 
 .auth-info {
   margin: 16px 0 0;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--muted);
 }
 
 #sign-out-button {
   padding: 0;
   border: 0;
   background: none;
-  color: #222;
+  color: var(--blue);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -122,15 +136,18 @@ textarea {
   width: 100%;
   min-height: 72px;
   padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--brown);
   resize: vertical;
 }
 
 .composer button {
   justify-self: start;
   padding: 8px 14px;
-  border: 1px solid #222;
-  background: #222;
-  color: #f5f2e8;
+  border: 1px solid var(--rust);
+  background: var(--rust);
+  color: var(--paper);
   cursor: pointer;
 }
 
@@ -145,17 +162,17 @@ textarea {
 
 .profile p {
   margin: 6px 0 0;
-  color: #666;
+  color: var(--muted);
 }
 
 .status {
   padding: 24px 0;
-  border-top: 1px solid #aaa;
+  border-top: 1px solid var(--border);
 }
 
 .status > a {
   font-weight: 700;
-  color: inherit;
+  color: var(--blue);
   text-decoration: none;
 }
 
@@ -170,6 +187,7 @@ textarea {
 
 .status time {
   font-size: 0.875rem;
+  color: var(--muted);
 }
 
 @media (min-width: 640px) {
@@ -183,7 +201,7 @@ textarea {
   }
 
   .sidebar {
-    border-right: 1px solid #aaa;
+    border-right: 1px solid var(--border);
     border-bottom: 0;
     padding-right: 24px;
     padding-bottom: 0;
