@@ -46,6 +46,29 @@ textarea {
   margin: 8px 0 0;
 }
 
+.app-layout {
+  display: grid;
+  gap: 32px;
+}
+
+.sidebar {
+  border-bottom: 1px solid #aaa;
+  padding-bottom: 24px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.site-nav a {
+  color: inherit;
+}
+
+.main-content {
+  min-width: 0;
+}
+
 .login {
   display: grid;
   gap: 8px;
@@ -70,7 +93,7 @@ textarea {
 }
 
 .auth-info {
-  margin-bottom: 28px;
+  margin: 16px 0 0;
   font-size: 0.875rem;
   color: #666;
 }
@@ -150,6 +173,27 @@ textarea {
 }
 
 @media (min-width: 640px) {
+  .site {
+    width: min(800px, calc(100% - 48px));
+  }
+
+  .app-layout {
+    grid-template-columns: 160px 1fr;
+    gap: 32px;
+  }
+
+  .sidebar {
+    border-right: 1px solid #aaa;
+    border-bottom: 0;
+    padding-right: 24px;
+    padding-bottom: 0;
+  }
+
+  .site-nav {
+    display: grid;
+    gap: 12px;
+  }
+
   .login {
     display: flex;
     align-items: center;

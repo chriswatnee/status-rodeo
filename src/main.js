@@ -22,33 +22,46 @@ function renderHome() {
         <p>A tiny status service.</p>
       </header>
 
-      <section id="login" class="login">
-        <label for="email-input">Email</label>
-        <input id="email-input" type="email" />
+      <div class="app-layout">
+        <aside class="sidebar">
+          <nav class="site-nav">
+            <a href="/">Home</a>
+            <a id="profile-link" href="#" hidden>My Profile</a>
+          </nav>
 
-        <label for="password-input">Password</label>
-        <input id="password-input" type="password" />
+          <div class="auth-info">
+            <span id="auth-status"></span>
+            <span id="auth-separator" hidden>·</span>
+            <button id="sign-out-button" type="button" hidden>
+              Sign out
+            </button>
+          </div>
+        </aside>
 
-        <button type="button">Sign in</button>
-      </section>
+        <div class="main-content">
+          <section id="login" class="login">
+            <label for="email-input">Email</label>
+            <input id="email-input" type="email" />
 
-      <div class="auth-info">
-        <span id="auth-status"></span>
-        <span id="auth-separator" hidden>·</span>
-        <button id="sign-out-button" type="button" hidden>Sign out</button>
+            <label for="password-input">Password</label>
+            <input id="password-input" type="password" />
+
+            <button type="button">Sign in</button>
+          </section>
+
+          <section class="composer" hidden>
+            <label for="status-input">What's your status?</label>
+            <textarea
+              id="status-input"
+              rows="2"
+              placeholder="This ain't my first rodeo."
+            ></textarea>
+            <button type="button">Post status</button>
+          </section>
+
+          <section class="feed"></section>
+        </div>
       </div>
-
-      <section class="composer" hidden>
-        <label for="status-input">What's your status?</label>
-        <textarea
-          id="status-input"
-          rows="2"
-          placeholder="This ain't my first rodeo."
-        ></textarea>
-        <button type="button">Post status</button>
-      </section>
-
-      <section class="feed"></section>
     </main>
   `;
 
@@ -200,12 +213,22 @@ async function renderUserPage(username) {
         <p>A tiny status service.</p>
       </header>
 
-      <section class="profile">
-        <h2 id="profile-name"></h2>
-        <p id="profile-username"></p>
-      </section>
+      <div class="app-layout">
+        <aside class="sidebar">
+          <nav class="site-nav">
+            <a href="/">Home</a>
+          </nav>
+        </aside>
 
-      <section class="feed"></section>
+        <div class="main-content">
+          <section class="profile">
+            <h2 id="profile-name"></h2>
+            <p id="profile-username"></p>
+          </section>
+
+          <section class="feed"></section>
+        </div>
+      </div>
     </main>
   `;
 
