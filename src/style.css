@@ -69,6 +69,26 @@ textarea {
   padding-bottom: 24px;
 }
 
+.sidebar-profile {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.sidebar-profile strong {
+  font-size: 1.125rem;
+}
+
+.sidebar-profile span {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.sidebar-profile a {
+  margin-top: 4px;
+  font-size: 0.875rem;
+}
+
 .site-nav {
   display: flex;
   gap: 16px;
@@ -85,7 +105,12 @@ textarea {
 .login {
   display: grid;
   gap: 8px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.login label {
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
 .login input {
@@ -196,7 +221,7 @@ textarea {
   }
 
   .app-layout {
-    grid-template-columns: 160px 1fr;
+    grid-template-columns: 180px 1fr;
     gap: 32px;
   }
 
@@ -210,14 +235,5 @@ textarea {
   .site-nav {
     display: grid;
     gap: 12px;
-  }
-
-  .login {
-    display: flex;
-    align-items: center;
-  }
-
-  .login input {
-    width: 180px;
   }
 }

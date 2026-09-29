@@ -24,6 +24,22 @@ function renderHome() {
 
       <div class="app-layout">
         <aside class="sidebar">
+          <section id="sidebar-profile" class="sidebar-profile" hidden>
+            <strong id="sidebar-display-name"></strong>
+            <span id="sidebar-username"></span>
+            <a id="view-profile-link" href="#">View Profile</a>
+          </section>
+
+          <section id="login" class="login">
+            <label for="email-input">Email</label>
+            <input id="email-input" type="email" />
+
+            <label for="password-input">Password</label>
+            <input id="password-input" type="password" />
+
+            <button type="button">Sign in</button>
+          </section>
+
           <nav class="site-nav">
             <a href="/">Home</a>
             <a id="profile-link" href="#" hidden>My Profile</a>
@@ -39,16 +55,6 @@ function renderHome() {
         </aside>
 
         <div class="main-content">
-          <section id="login" class="login">
-            <label for="email-input">Email</label>
-            <input id="email-input" type="email" />
-
-            <label for="password-input">Password</label>
-            <input id="password-input" type="password" />
-
-            <button type="button">Sign in</button>
-          </section>
-
           <section class="composer" hidden>
             <label for="status-input">What's your status?</label>
             <textarea
@@ -65,6 +71,12 @@ function renderHome() {
     </main>
   `;
 
+  const sidebarProfile = document.querySelector('#sidebar-profile');
+  const sidebarDisplayName = document.querySelector('#sidebar-display-name');
+  const sidebarUsername = document.querySelector('#sidebar-username');
+  const viewProfileLink = document.querySelector('#view-profile-link');
+  const profileLink = document.querySelector('#profile-link');
+
   const loginSection = document.querySelector('#login');
   const composer = document.querySelector('.composer');
   const signOutButton = document.querySelector('#sign-out-button');
@@ -77,6 +89,36 @@ function renderHome() {
   const passwordInput = document.querySelector('#password-input');
   const signInButton = document.querySelector('.login button');
 
+  async function loadProfile(userId) {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('username, display_name')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    // Avoid displaying a profile if the user signed out
+    // while the request was running.
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (sessionData.session?.user.id !== userId) {
+      return;
+    }
+
+    sidebarDisplayName.textContent = profile.display_name;
+    sidebarUsername.textContent = `@${profile.username}`;
+
+    viewProfileLink.href = `/users/${profile.username}`;
+    profileLink.href = `/users/${profile.username}`;
+
+    sidebarProfile.hidden = false;
+    profileLink.hidden = false;
+  }
+
   function updateAuthUI(session) {
     if (session) {
       loginSection.hidden = true;
@@ -84,12 +126,22 @@ function renderHome() {
       signOutButton.hidden = false;
       authSeparator.hidden = false;
       authStatus.textContent = 'Signed in';
+
+      loadProfile(session.user.id);
     } else {
       loginSection.hidden = false;
       composer.hidden = true;
       signOutButton.hidden = true;
       authSeparator.hidden = true;
       authStatus.textContent = '';
+
+      sidebarProfile.hidden = true;
+      profileLink.hidden = true;
+
+      sidebarDisplayName.textContent = '';
+      sidebarUsername.textContent = '';
+      viewProfileLink.href = '#';
+      profileLink.href = '#';
     }
   }
 
@@ -102,8 +154,8 @@ function renderHome() {
 
     const { data, error } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error(error);
+    if (error || !data.user) {
+      console.error(error || 'Not signed in.');
       return;
     }
 
@@ -192,7 +244,12 @@ function renderHome() {
   }
 
   async function loadSession() {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     updateAuthUI(data.session);
   }
