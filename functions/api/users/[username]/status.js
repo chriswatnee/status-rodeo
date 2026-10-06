@@ -1,5 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+};
+
+function json(body, status = 200) {
+  return Response.json(body, { status, headers });
+}
+
 export async function onRequest({ env, params }) {
   const supabase = createClient(
     env.VITE_SUPABASE_URL,
@@ -12,15 +20,16 @@ export async function onRequest({ env, params }) {
     .from('profiles')
     .select('user_id')
     .eq('username', username)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error(profileError);
 
-    return Response.json(
-      { error: 'User not found.' },
-      { status: 404 }
-    );
+    return json({ error: 'Unable to load user.' }, 500);
+  }
+
+  if (!profile) {
+    return json({ error: 'User not found.' }, 404);
   }
 
   const { data, error } = await supabase
@@ -30,20 +39,17 @@ export async function onRequest({ env, params }) {
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(error);
 
-    return Response.json(
-      { error: 'Unable to load status.' },
-      { status: 500 }
-    );
+    return json({ error: 'Unable to load status.' }, 500);
   }
 
-  return Response.json(data, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
+  if (!data) {
+    return json({ error: 'No status found.' }, 404);
+  }
+
+  return json(data);
 }
