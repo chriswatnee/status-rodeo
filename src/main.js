@@ -16,11 +16,8 @@ if (pathParts.length === 0) {
 
 function renderHome() {
   app.innerHTML = `
+    ${masthead(false)}
     <main class="site">
-      <header class="site-header">
-        <h1>Status Rodeo</h1>
-        <p>A tiny status service.</p>
-      </header>
 
       <div class="app-layout">
         <aside class="sidebar">
@@ -279,11 +276,8 @@ function renderHome() {
 
 async function renderUserPage(username) {
   app.innerHTML = `
+    ${masthead(true)}
     <main class="site">
-      <header class="site-header">
-        <h1><a href="/">Status Rodeo</a></h1>
-        <p>A tiny status service.</p>
-      </header>
 
       <div class="app-layout">
         <aside class="sidebar">
@@ -360,11 +354,8 @@ async function renderUserPage(username) {
 
 function renderNotFound() {
   app.innerHTML = `
+    ${masthead(true)}
     <main class="site">
-      <header class="site-header">
-        <h1><a href="/">Status Rodeo</a></h1>
-        <p>A tiny status service.</p>
-      </header>
 
       <h2>Page not found</h2>
       <p><a href="/">Back to Status Rodeo</a></p>
@@ -428,4 +419,24 @@ function createTimeElement(createdAt) {
   });
 
   return time;
+}
+
+// The illustrated masthead is its own image asset (public/masthead.png). The
+// words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
+// It links home everywhere except the home page itself.
+function masthead(linkHome) {
+  const image = `<img
+        src="/masthead.png"
+        width="3072"
+        height="768"
+        alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
+        fetchpriority="high"
+      />`;
+
+  return `
+    <header class="masthead">
+      <h1 class="visually-hidden">Status Rodeo</h1>
+      ${linkHome ? `<a href="/">${image}</a>` : image}
+    </header>
+  `;
 }
