@@ -5,11 +5,19 @@
 
   --cream: #f3ead7;
   --paper: #fffaf0;
+  --panel: #fbf5e6;
   --brown: #3b2b20;
   --rust: #a74724;
   --blue: #245b9e;
   --border: #b8a88d;
   --muted: #746655;
+
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(59, 43, 32, 0.08), 0 4px 12px rgba(59, 43, 32, 0.06);
+
+  /* Display face for the title and a few headings. Replace with the chosen
+     self-hosted font; Georgia is the fallback. */
+  --font-display: Georgia, 'Times New Roman', serif;
 }
 
 body {
@@ -42,6 +50,7 @@ textarea {
 
 .site-header h1 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 2.5rem;
 }
 
@@ -61,12 +70,16 @@ textarea {
 
 .app-layout {
   display: grid;
-  gap: 32px;
+  gap: 24px;
 }
 
 .sidebar {
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 24px;
+  align-self: start;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
 }
 
 .sidebar-profile {
@@ -118,6 +131,7 @@ textarea {
   width: 100%;
   padding: 6px 8px;
   border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--paper);
   color: var(--brown);
 }
@@ -126,6 +140,7 @@ textarea {
   justify-self: start;
   padding: 6px 12px;
   border: 1px solid var(--rust);
+  border-radius: 6px;
   background: var(--rust);
   color: var(--paper);
   cursor: pointer;
@@ -149,7 +164,12 @@ textarea {
 .composer {
   display: grid;
   gap: 8px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
 }
 
 .composer label {
@@ -162,6 +182,7 @@ textarea {
   min-height: 72px;
   padding: 10px 12px;
   border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--paper);
   color: var(--brown);
   resize: vertical;
@@ -171,17 +192,24 @@ textarea {
   justify-self: start;
   padding: 8px 14px;
   border: 1px solid var(--rust);
+  border-radius: 6px;
   background: var(--rust);
   color: var(--paper);
   cursor: pointer;
 }
 
 .profile {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
 }
 
 .profile h2 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 1.75rem;
 }
 
@@ -190,9 +218,25 @@ textarea {
   color: var(--muted);
 }
 
+.feed {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.feed:empty {
+  display: none;
+}
+
 .status {
-  padding: 24px 0;
+  padding: 18px 20px;
   border-top: 1px solid var(--border);
+}
+
+.status:first-child {
+  border-top: 0;
 }
 
 .status > a {
@@ -217,19 +261,11 @@ textarea {
 
 @media (min-width: 640px) {
   .site {
-    width: min(800px, calc(100% - 48px));
+    width: min(1100px, calc(100% - 48px));
   }
 
   .app-layout {
-    grid-template-columns: 180px 1fr;
-    gap: 32px;
-  }
-
-  .sidebar {
-    border-right: 1px solid var(--border);
-    border-bottom: 0;
-    padding-right: 24px;
-    padding-bottom: 0;
+    grid-template-columns: minmax(200px, 260px) 1fr;
   }
 
   .site-nav {
