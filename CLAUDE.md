@@ -149,9 +149,10 @@ with the viewport so desktop proportions hold. Avatar slots show the first
 letter of the display name until `/avatars/<username>.png` exists. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
 for the feed heading, profile name and avatar letters). The masthead is
-`public/masthead.png` (3072x768, 4:1), rendered full width above the app by the
-`masthead()` helper in `src/main.js`, with alt text and a visually hidden `h1`.
-It links to `/` on every page except the home page.
+`public/masthead.webp` (3072x768, 4:1, quality-90 WebP; the original PNG is
+kept outside the repo), rendered full width above the app by the `masthead()`
+helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
+`/` on every page except the home page.
 
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a

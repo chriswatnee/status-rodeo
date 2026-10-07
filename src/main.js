@@ -421,12 +421,12 @@ function createTimeElement(createdAt) {
   return time;
 }
 
-// The illustrated masthead is its own image asset (public/masthead.png). The
+// The illustrated masthead is its own image asset (public/masthead.webp). The
 // words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
 // It links home everywhere except the home page itself.
 function masthead(linkHome) {
   const image = `<img
-        src="/masthead.png"
+        src="/masthead.webp"
         width="3072"
         height="768"
         alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
