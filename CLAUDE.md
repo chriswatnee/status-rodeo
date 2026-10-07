@@ -140,8 +140,15 @@ personality; the HTML/CSS provides the app. Do not steer toward pixel art, retro
 OS or terminal looks, or an overt video-game interface.
 
 Current state: two-column layout (account/navigation sidebar plus main status
-column) in a warm palette (cream, paper, dark brown, rust, blue links, tan
-borders; see the CSS variables in `src/style.css`). No artwork has been added yet.
+column) with a palette and proportions sampled from the mockup: a tan page
+background, lighter cream panels, a warm header band on the feed, `#351709`
+headings, near-black body text, muted text `#6b625b`, a brown "Post" button,
+blue links, about 12px radius, and soft warm borders and shadows. See the CSS
+variables in `src/style.css`; sizes are in `rem`, and the root font size grows
+with the viewport so desktop proportions hold. Avatar slots show the first
+letter of the display name until `/avatars/<username>.png` exists. The masthead
+artwork and the self-hosted Zilla Slab Bold display font are not added yet
+(`--font-display` falls back to Georgia).
 
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a
@@ -158,7 +165,8 @@ Target:
 - Avatars are illustrated image assets named by username (for example
   `/avatars/<username>.png`), chosen over a database column for now. Changing an
   avatar or the interface must never require changing the masthead.
-- Times are shown relative ("2 hours ago").
+- Times stay absolute (for example "Oct 7, 6:40 AM"). The mockup's relative
+  times are illustrative; do not change this without asking.
 - The mobile layout is designed deliberately later (re-crop the masthead,
   collapse the columns), not by scaling the desktop layout down.
 
