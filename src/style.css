@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Zilla Slab';
+  src: url('/fonts/zilla-slab-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   Palette, radius, shadow, and proportions are sampled from the design mockup.
   Sizes are in rem. The root size grows with the viewport (about 20px at 1536px
@@ -25,7 +33,7 @@
   --radius-small: 0.4rem;
   --shadow: 0 2px 8px rgba(120, 70, 25, 0.15);
 
-  /* Zilla Slab Bold once the font file is added; Georgia until then. */
+  /* Self-hosted Zilla Slab Bold (public/fonts), Georgia as the fallback. */
   --font-display: 'Zilla Slab', Georgia, 'Times New Roman', serif;
 
   --avatar: 4rem;

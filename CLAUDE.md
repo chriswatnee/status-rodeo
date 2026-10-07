@@ -146,9 +146,10 @@ headings, near-black body text, muted text `#6b625b`, a brown "Post" button,
 blue links, about 12px radius, and soft warm borders and shadows. See the CSS
 variables in `src/style.css`; sizes are in `rem`, and the root font size grows
 with the viewport so desktop proportions hold. Avatar slots show the first
-letter of the display name until `/avatars/<username>.png` exists. The masthead
-artwork and the self-hosted Zilla Slab Bold display font are not added yet
-(`--font-display` falls back to Georgia).
+letter of the display name until `/avatars/<username>.png` exists. The display
+font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
+for the feed heading, profile name and avatar letters). The masthead artwork is
+not added yet.
 
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a
