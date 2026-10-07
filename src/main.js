@@ -25,9 +25,12 @@ function renderHome() {
       <div class="app-layout">
         <aside class="sidebar">
           <section id="sidebar-profile" class="sidebar-profile" hidden>
-            <strong id="sidebar-display-name"></strong>
-            <span id="sidebar-username"></span>
-            <a id="view-profile-link" href="#">View Profile</a>
+            <span id="sidebar-avatar"></span>
+            <div class="sidebar-identity">
+              <strong id="sidebar-display-name"></strong>
+              <span id="sidebar-username"></span>
+              <a id="view-profile-link" href="#">View profile</a>
+            </div>
           </section>
 
           <section id="login" class="login">
@@ -41,8 +44,8 @@ function renderHome() {
           </section>
 
           <nav class="site-nav">
-            <a href="/">Home</a>
-            <a id="profile-link" href="#" hidden>My Profile</a>
+            <a href="/" aria-current="page">Home</a>
+            <a id="profile-link" href="#" hidden>My profile</a>
           </nav>
 
           <div class="auth-info">
@@ -56,22 +59,31 @@ function renderHome() {
 
         <div class="main-content">
           <section class="composer" hidden>
-            <label for="status-input">What's your status?</label>
-            <textarea
-              id="status-input"
-              rows="2"
-              placeholder="This ain't my first rodeo."
-            ></textarea>
-            <button type="button">Post status</button>
+            <span id="composer-avatar"></span>
+            <div class="composer-fields">
+              <label class="visually-hidden" for="status-input">What's your status?</label>
+              <textarea
+                id="status-input"
+                rows="1"
+                placeholder="This ain't my first rodeo."
+              ></textarea>
+              <div class="composer-actions">
+                <button type="button">Post</button>
+              </div>
+            </div>
           </section>
 
-          <section class="feed"></section>
+          <section class="feed-panel">
+            <h2 class="panel-heading">Recent Statuses</h2>
+            <div class="feed"></div>
+          </section>
         </div>
       </div>
     </main>
   `;
 
   const sidebarProfile = document.querySelector('#sidebar-profile');
+  const sidebarAvatar = document.querySelector('#sidebar-avatar');
   const sidebarDisplayName = document.querySelector('#sidebar-display-name');
   const sidebarUsername = document.querySelector('#sidebar-username');
   const viewProfileLink = document.querySelector('#view-profile-link');
@@ -79,6 +91,7 @@ function renderHome() {
 
   const loginSection = document.querySelector('#login');
   const composer = document.querySelector('.composer');
+  const composerAvatar = document.querySelector('#composer-avatar');
   const signOutButton = document.querySelector('#sign-out-button');
   const authStatus = document.querySelector('#auth-status');
   const authSeparator = document.querySelector('#auth-separator');
@@ -111,6 +124,12 @@ function renderHome() {
 
     sidebarDisplayName.textContent = profile.display_name;
     sidebarUsername.textContent = `@${profile.username}`;
+    sidebarAvatar.replaceChildren(
+      createAvatar(profile.username, profile.display_name)
+    );
+    composerAvatar.replaceChildren(
+      createAvatar(profile.username, profile.display_name)
+    );
 
     viewProfileLink.href = `/users/${profile.username}`;
     profileLink.href = `/users/${profile.username}`;
@@ -140,6 +159,8 @@ function renderHome() {
 
       sidebarDisplayName.textContent = '';
       sidebarUsername.textContent = '';
+      sidebarAvatar.replaceChildren();
+      composerAvatar.replaceChildren();
       viewProfileLink.href = '#';
       profileLink.href = '#';
     }
@@ -199,20 +220,14 @@ function renderHome() {
     feed.innerHTML = '';
 
     for (const status of data) {
-      const article = document.createElement('article');
-      article.className = 'status';
-
-      const name = document.createElement('a');
-      name.href = `/users/${status.profiles.username}`;
-      name.textContent = status.profiles.display_name;
-
-      const paragraph = document.createElement('p');
-      paragraph.textContent = status.content;
-
-      const time = createTimeElement(status.created_at);
-
-      article.append(name, paragraph, time);
-      feed.append(article);
+      feed.append(
+        createStatusRow({
+          username: status.profiles.username,
+          displayName: status.profiles.display_name,
+          content: status.content,
+          createdAt: status.created_at,
+        })
+      );
     }
   }
 
@@ -279,16 +294,23 @@ async function renderUserPage(username) {
 
         <div class="main-content">
           <section class="profile">
-            <h2 id="profile-name"></h2>
-            <p id="profile-username"></p>
+            <span id="profile-avatar"></span>
+            <div>
+              <h2 id="profile-name"></h2>
+              <p id="profile-username"></p>
+            </div>
           </section>
 
-          <section class="feed"></section>
+          <section class="feed-panel">
+            <h2 class="panel-heading">Recent Statuses</h2>
+            <div class="feed"></div>
+          </section>
         </div>
       </div>
     </main>
   `;
 
+  const profileAvatar = document.querySelector('#profile-avatar');
   const profileName = document.querySelector('#profile-name');
   const profileUsername = document.querySelector('#profile-username');
   const feed = document.querySelector('.feed');
@@ -307,6 +329,9 @@ async function renderUserPage(username) {
 
   profileName.textContent = profile.display_name;
   profileUsername.textContent = `@${profile.username}`;
+  profileAvatar.replaceChildren(
+    createAvatar(profile.username, profile.display_name)
+  );
 
   const { data: statuses, error: statusesError } = await supabase
     .from('statuses')
@@ -322,16 +347,14 @@ async function renderUserPage(username) {
   }
 
   for (const status of statuses) {
-    const article = document.createElement('article');
-    article.className = 'status';
-
-    const paragraph = document.createElement('p');
-    paragraph.textContent = status.content;
-
-    const time = createTimeElement(status.created_at);
-
-    article.append(paragraph, time);
-    feed.append(article);
+    feed.append(
+      createStatusRow({
+        username: profile.username,
+        displayName: profile.display_name,
+        content: status.content,
+        createdAt: status.created_at,
+      })
+    );
   }
 }
 
@@ -347,6 +370,50 @@ function renderNotFound() {
       <p><a href="/">Back to Status Rodeo</a></p>
     </main>
   `;
+}
+
+// A user's avatar, expected at /avatars/<username>.png. Until that file exists
+// the slot shows the first letter of the display name. The image only replaces
+// the letter once it has loaded, so a missing file never shows a broken image.
+function createAvatar(username, displayName) {
+  const avatar = document.createElement('span');
+  avatar.className = 'avatar';
+  avatar.textContent = (displayName || username || '?').charAt(0).toUpperCase();
+
+  const image = new Image();
+  image.alt = '';
+  image.addEventListener('load', () => {
+    avatar.textContent = '';
+    avatar.append(image);
+  });
+  image.src = `/avatars/${encodeURIComponent(username)}.png`;
+
+  return avatar;
+}
+
+function createStatusRow({ username, displayName, content, createdAt }) {
+  const article = document.createElement('article');
+  article.className = 'status';
+
+  const name = document.createElement('a');
+  name.className = 'status-name';
+  name.href = `/users/${username}`;
+  name.textContent = displayName;
+
+  const meta = document.createElement('div');
+  meta.className = 'status-meta';
+  meta.append(name, createTimeElement(createdAt));
+
+  const paragraph = document.createElement('p');
+  paragraph.textContent = content;
+
+  const body = document.createElement('div');
+  body.className = 'status-body';
+  body.append(meta, paragraph);
+
+  article.append(createAvatar(username, displayName), body);
+
+  return article;
 }
 
 function createTimeElement(createdAt) {
