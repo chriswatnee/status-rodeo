@@ -146,10 +146,10 @@ headings, near-black body text, muted text `#6b625b`, a brown "Post" button,
 blue links, about 12px radius, and soft warm borders and shadows. See the CSS
 variables in `src/style.css`; sizes are in `rem`, and the root font size grows
 with the viewport so desktop proportions hold. Avatar slots show the first
-letter of the display name until `/avatars/<username>.png` exists. Chris and Sofie
-have theirs (`public/avatars/chris.png`, `public/avatars/sofie.png`: 512x512 RGB
-PNGs, full-bleed artwork with its own sky background; the frame, border and
-rounded corners are CSS). A new user needs a same-named square PNG. The display
+letter of the display name until `/avatars/<username>.webp` exists. Chris and Sofie
+have theirs (`public/avatars/chris.webp`, `public/avatars/sofie.webp`: 512x512 RGB
+quality-92 WebPs, full-bleed artwork with its own sky background; the frame, border and
+rounded corners are CSS). A new user needs a same-named square WebP. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
 for the feed heading, profile name and avatar letters). The masthead is
 `public/masthead.webp` (3072x768, 4:1, quality-90 WebP; the original PNG is
@@ -170,7 +170,7 @@ Target:
   rows are simple (avatar, name, time, text), with no decoration on individual
   statuses.
 - Avatars are illustrated image assets named by username (for example
-  `/avatars/<username>.png`), chosen over a database column for now. Changing an
+  `/avatars/<username>.webp`), chosen over a database column for now. Changing an
   avatar or the interface must never require changing the masthead.
 - Times stay absolute (for example "Oct 7, 6:40 AM"). The mockup's relative
   times are illustrative; do not change this without asking.
