@@ -134,15 +134,35 @@ redirect URLs are configured.
 
 ## Design direction
 
-Oregon Trail meets early Twitter: a Western look on top of a simple social
-layout. Right now the Western feel comes from the palette and the copy; there is
-no pixel-art styling in the CSS yet.
+The look is a full-resolution illustrated Western world (not pixel art) with a
+quiet, readable app interface underneath. The illustration provides the
+personality; the HTML/CSS provides the app. Do not steer toward pixel art, retro
+OS or terminal looks, or an overt video-game interface.
 
-Current state: two-column desktop layout (account/navigation sidebar plus main
-status column). Palette is warm cream, dark brown, rust/burnt orange, old-web
-blue links, tan borders.
+Current state: two-column layout (account/navigation sidebar plus main status
+column) in a warm palette (cream, paper, dark brown, rust, blue links, tan
+borders; see the CSS variables in `src/style.css`). No artwork has been added yet.
 
-Planned:
-- A pixel-art Western masthead. Keep "Status Rodeo" as real HTML text, not part
-  of the artwork.
-- Selectable pixel avatars, stored as real profile data.
+Target:
+- A wide illustrated masthead above the app. It is its own image asset, never a
+  screenshot of the app or a page background. The words "Status Rodeo" are part
+  of the artwork: give the image alt text and keep a visually hidden `h1`. No
+  tagline or motto.
+- Below it, a calm interface: cream/parchment background, dark brown text, rust
+  accents, blue links, subtle tan borders, restrained shadows, comfortable
+  spacing. Western display type only for the title and a few headings; normal
+  readable type for statuses and controls. Self-host any font.
+- Sidebar: account identity and navigation. Main column: composer and feed. Feed
+  rows are simple (avatar, name, time, text), with no decoration on individual
+  statuses.
+- Avatars are illustrated image assets named by username (for example
+  `/avatars/<username>.png`), chosen over a database column for now. Changing an
+  avatar or the interface must never require changing the masthead.
+- Times are shown relative ("2 hours ago").
+- The mobile layout is designed deliberately later (re-crop the masthead,
+  collapse the columns), not by scaling the desktop layout down.
+
+A mockup is a visual reference, not a feature list. These controls appear in it
+but are not built, and are not to be added without asking: Settings, a "Post a
+status" nav link, a users list, sort controls, per-status menus, a character
+counter.
