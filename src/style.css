@@ -1,23 +1,46 @@
+/*
+  Palette, radius, shadow, and proportions are sampled from the design mockup.
+  Sizes are in rem. The root size grows with the viewport (about 20px at 1536px
+  wide, never below the browser's own default), so the layout keeps the
+  mockup's proportions as the window changes size.
+*/
 :root {
+  --bg: #f5dab3;
+  --panel: #f9efdf;
+  --band: #f8e4c4;
+  --input: #fbf3e8;
+  --border: #e2c6a2;
+  --divider: #efd9bf;
+  --text: #1b120c;
+  --heading: #351709;
+  --muted: #6b625b;
+  --link: #0759bd;
+  --button: #8a5130;
+  --button-hover: #75442a;
+  --nav-active: #f8d9ac;
+  --avatar-bg: #ecd3ab;
+  --avatar-border: #3a2414;
+
+  --radius: 0.6rem;
+  --radius-small: 0.4rem;
+  --shadow: 0 2px 8px rgba(120, 70, 25, 0.15);
+
+  /* Zilla Slab Bold once the font file is added; Georgia until then. */
+  --font-display: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+
+  --avatar: 4rem;
+
   font-family: system-ui, sans-serif;
-  color: #3b2b20;
-  background: #f3ead7;
+  font-size: clamp(100%, 1.3vw, 131%);
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+}
 
-  --cream: #f3ead7;
-  --paper: #fffaf0;
-  --panel: #fbf5e6;
-  --brown: #3b2b20;
-  --rust: #a74724;
-  --blue: #245b9e;
-  --border: #b8a88d;
-  --muted: #746655;
-
-  --radius: 8px;
-  --shadow: 0 1px 2px rgba(59, 43, 32, 0.08), 0 4px 12px rgba(59, 43, 32, 0.06);
-
-  /* Display face for the title and a few headings. Replace with the chosen
-     self-hosted font; Georgia is the fallback. */
-  --font-display: Georgia, 'Times New Roman', serif;
+@media (max-width: 639px) {
+  :root {
+    --avatar: 3.25rem;
+  }
 }
 
 body {
@@ -29,7 +52,7 @@ body {
 }
 
 a {
-  color: var(--blue);
+  color: var(--link);
 }
 
 button,
@@ -38,24 +61,47 @@ textarea {
   font: inherit;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Page */
+
 .site {
-  width: min(640px, calc(100% - 32px));
+  width: min(81rem, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 64px 0;
+  padding: 1.5rem 0 3rem;
 }
 
 .site-header {
-  margin-bottom: 28px;
+  margin-bottom: 1.25rem;
 }
 
 .site-header h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: 2.25rem;
+  color: var(--heading);
 }
 
 .site-header h1 a {
-  color: var(--brown);
+  color: inherit;
   text-decoration: none;
 }
 
@@ -64,166 +110,268 @@ textarea {
 }
 
 .site-header p {
-  margin: 8px 0 0;
+  margin: 0.25rem 0 0;
   color: var(--muted);
 }
 
 .app-layout {
   display: grid;
-  gap: 24px;
-}
-
-.sidebar {
-  align-self: start;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow);
-}
-
-.sidebar-profile {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 24px;
-}
-
-.sidebar-profile strong {
-  font-size: 1.125rem;
-}
-
-.sidebar-profile span {
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.sidebar-profile a {
-  margin-top: 4px;
-  font-size: 0.875rem;
-}
-
-.site-nav {
-  display: flex;
-  gap: 16px;
-}
-
-.site-nav a {
-  color: var(--blue);
+  gap: 0.9rem;
+  align-items: start;
 }
 
 .main-content {
   min-width: 0;
 }
 
+/* Panels */
+
+.sidebar,
+.composer,
+.profile,
+.feed-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+/* Avatars */
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--avatar);
+  height: var(--avatar);
+  overflow: hidden;
+  border: 2px solid var(--avatar-border);
+  border-radius: var(--radius-small);
+  background: var(--avatar-bg);
+  color: var(--heading);
+  font-family: var(--font-display);
+  font-size: calc(var(--avatar) * 0.45);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sidebar */
+
+.sidebar {
+  padding: 1.3rem;
+}
+
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.sidebar-identity {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sidebar-identity strong {
+  font-size: 1.3rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-identity span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sidebar-identity a {
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.sidebar-identity a:hover {
+  text-decoration: underline;
+}
+
+.sidebar-identity a::after {
+  content: ' →';
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.site-nav a {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-small);
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  background: var(--band);
+}
+
+.site-nav a[aria-current='page'] {
+  background: var(--nav-active);
+}
+
 .login {
   display: grid;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
 }
 
 .login label {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
 .login input {
   box-sizing: border-box;
   width: 100%;
-  padding: 6px 8px;
+  padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--paper);
-  color: var(--brown);
+  border-radius: var(--radius-small);
+  background: var(--input);
+  color: var(--text);
 }
 
 .login button {
   justify-self: start;
-  padding: 6px 12px;
-  border: 1px solid var(--rust);
-  border-radius: 6px;
-  background: var(--rust);
-  color: var(--paper);
-  cursor: pointer;
+  margin-top: 0.3rem;
 }
 
 .auth-info {
-  margin: 16px 0 0;
-  font-size: 0.875rem;
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--divider);
+  font-size: 0.9rem;
   color: var(--muted);
+}
+
+.auth-info:has(#auth-status:empty) {
+  display: none;
 }
 
 #sign-out-button {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--blue);
+  color: var(--link);
   text-decoration: underline;
   cursor: pointer;
 }
 
-.composer {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 24px;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow);
+/* Buttons */
+
+.login button,
+.composer button {
+  padding: 0.5rem 1.6rem;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--button);
+  color: #fff;
+  font-size: 1.05rem;
+  cursor: pointer;
 }
 
-.composer label {
-  font-weight: 700;
+.login button:hover,
+.composer button:hover {
+  background: var(--button-hover);
+}
+
+/* Composer */
+
+.composer {
+  display: grid;
+  grid-template-columns: var(--avatar) 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.8rem;
+  padding: 0.85rem 1.3rem;
+}
+
+.composer-fields {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .composer textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 72px;
-  padding: 10px 12px;
+  min-height: 3.3rem;
+  padding: 0.7rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--paper);
-  color: var(--brown);
+  border-radius: var(--radius-small);
+  background: var(--input);
+  color: var(--text);
+  font-size: 1.05rem;
   resize: vertical;
 }
 
-.composer button {
-  justify-self: start;
-  padding: 8px 14px;
-  border: 1px solid var(--rust);
-  border-radius: 6px;
-  background: var(--rust);
-  color: var(--paper);
-  cursor: pointer;
+.composer textarea::placeholder {
+  color: var(--muted);
 }
 
+.composer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Profile header */
+
 .profile {
-  margin-bottom: 24px;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+  padding: 1rem 1.3rem;
 }
 
 .profile h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.7rem;
+  line-height: 1.2;
+  color: var(--heading);
 }
 
 .profile p {
-  margin: 6px 0 0;
+  margin: 0.15rem 0 0;
   color: var(--muted);
 }
 
-.feed {
+/* Feed */
+
+.feed-panel {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow);
+}
+
+.panel-heading {
+  margin: 0;
+  padding: 0.3rem 1.4rem;
+  border-bottom: 1px solid var(--divider);
+  background: var(--band);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1.2;
+  color: var(--heading);
 }
 
 .feed:empty {
@@ -231,45 +379,68 @@ textarea {
 }
 
 .status {
-  padding: 18px 20px;
-  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: var(--avatar) 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.45rem 1.4rem;
+  border-top: 1px solid var(--divider);
 }
 
 .status:first-child {
   border-top: 0;
 }
 
-.status > a {
+.status-body {
+  min-width: 0;
+}
+
+.status-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+}
+
+.status-name {
+  color: var(--text);
+  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--blue);
   text-decoration: none;
 }
 
-.status > a:hover {
+.status-name:hover {
   text-decoration: underline;
 }
 
-.status p {
-  margin: 0 0 8px;
-  font-size: 1.25rem;
+.status-meta time {
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 
-.status time {
-  font-size: 0.875rem;
-  color: var(--muted);
+.status-meta time::before {
+  content: '· ';
 }
+
+.status p {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+/* Wide layout: narrow sidebar beside a much larger main column */
 
 @media (min-width: 640px) {
   .site {
-    width: min(1100px, calc(100% - 48px));
+    width: min(81rem, calc(100% - 1.4rem));
   }
 
   .app-layout {
-    grid-template-columns: minmax(200px, 260px) 1fr;
+    grid-template-columns: minmax(12rem, 22%) 1fr;
   }
 
   .site-nav {
     display: grid;
-    gap: 12px;
+    gap: 0.15rem;
   }
 }
