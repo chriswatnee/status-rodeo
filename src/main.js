@@ -363,7 +363,7 @@ function renderNotFound() {
   `;
 }
 
-// A user's avatar, expected at /avatars/<username>.png. Until that file exists
+// A user's avatar, expected at /avatars/<username>.webp. Until that file exists
 // the slot shows the first letter of the display name. The image only replaces
 // the letter once it has loaded, so a missing file never shows a broken image.
 function createAvatar(username, displayName) {
@@ -377,7 +377,7 @@ function createAvatar(username, displayName) {
     avatar.textContent = '';
     avatar.append(image);
   });
-  image.src = `/avatars/${encodeURIComponent(username)}.png`;
+  image.src = `/avatars/${encodeURIComponent(username)}.webp`;
 
   return avatar;
 }
