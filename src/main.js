@@ -30,7 +30,7 @@ function renderHome() {
             </div>
           </section>
 
-          <section id="login" class="login">
+          <section id="login" class="login" hidden>
             <label for="email-input">Email</label>
             <input id="email-input" type="email" />
 
@@ -72,7 +72,7 @@ function renderHome() {
 
           <section class="feed-panel">
             <h2 class="panel-heading">Recent Statuses</h2>
-            <div class="feed"></div>
+            <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
           </section>
         </div>
       </div>
@@ -108,6 +108,7 @@ function renderHome() {
 
     if (error) {
       console.error(error);
+      composerAvatar.replaceChildren();
       return;
     }
 
@@ -142,6 +143,7 @@ function renderHome() {
       signOutButton.hidden = false;
       authSeparator.hidden = false;
       authStatus.textContent = 'Signed in';
+      composerAvatar.replaceChildren(createLoadingAvatar());
 
       loadProfile(session.user.id);
     } else {
@@ -209,8 +211,11 @@ function renderHome() {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    feed.removeAttribute('aria-busy');
+
     if (error) {
       console.error(error);
+      feed.replaceChildren();
       return;
     }
 
@@ -260,6 +265,7 @@ function renderHome() {
 
     if (error) {
       console.error(error);
+      updateAuthUI(null);
       return;
     }
 
@@ -288,7 +294,7 @@ async function renderUserPage(username) {
 
         <div class="main-content">
           <section class="profile">
-            <span id="profile-avatar"></span>
+            <span id="profile-avatar"><span class="avatar" data-state="loading"></span></span>
             <div>
               <h2 id="profile-name"></h2>
               <p id="profile-username"></p>
@@ -297,7 +303,7 @@ async function renderUserPage(username) {
 
           <section class="feed-panel">
             <h2 class="panel-heading">Recent Statuses</h2>
-            <div class="feed"></div>
+            <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
           </section>
         </div>
       </div>
@@ -335,6 +341,9 @@ async function renderUserPage(username) {
     .order('created_at', { ascending: false })
     .limit(5);
 
+  feed.removeAttribute('aria-busy');
+  feed.replaceChildren();
+
   if (statusesError) {
     console.error(statusesError);
     return;
@@ -363,23 +372,59 @@ function renderNotFound() {
   `;
 }
 
-// A user's avatar, expected at /avatars/<username>.webp. Until that file exists
-// the slot shows the first letter of the display name. The image only replaces
-// the letter once it has loaded, so a missing file never shows a broken image.
+// A user's avatar, expected at /avatars/<username>.webp. While the file loads the
+// slot shows a pulsing placeholder. Once it loads the image replaces the
+// placeholder. If it fails, or takes more than a few seconds, the slot shows the
+// first letter of the display name instead.
 function createAvatar(username, displayName) {
   const avatar = document.createElement('span');
   avatar.className = 'avatar';
+  avatar.dataset.state = 'loading';
   avatar.textContent = (displayName || username || '?').charAt(0).toUpperCase();
 
   const image = new Image();
   image.alt = '';
+
+  const giveUp = setTimeout(() => {
+    avatar.dataset.state = 'fallback';
+  }, 8000);
+
   image.addEventListener('load', () => {
+    clearTimeout(giveUp);
     avatar.textContent = '';
     avatar.append(image);
+    avatar.dataset.state = 'loaded';
   });
+
+  image.addEventListener('error', () => {
+    clearTimeout(giveUp);
+    avatar.dataset.state = 'fallback';
+  });
+
   image.src = `/avatars/${encodeURIComponent(username)}.webp`;
 
   return avatar;
+}
+
+// An empty avatar in its loading state, for slots whose user is not known yet.
+function createLoadingAvatar() {
+  const avatar = document.createElement('span');
+  avatar.className = 'avatar';
+  avatar.dataset.state = 'loading';
+
+  return avatar;
+}
+
+// Static placeholder rows shown in the feed until the statuses arrive.
+function feedPlaceholder() {
+  const row = `
+    <div class="status-skeleton" aria-hidden="true">
+      <span class="skeleton-avatar"></span>
+      <span class="skeleton-lines"><span></span><span></span></span>
+    </div>
+  `;
+
+  return `${row.repeat(3)}<p class="visually-hidden" role="status">Loading statuses</p>`;
 }
 
 function createStatusRow({ username, displayName, content, createdAt }) {
