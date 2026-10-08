@@ -56,7 +56,11 @@ fallback. No `_redirects` file is needed.
 ## Structure
 
 - `src/main.js` holds client-side routing by pathname (`/`, `/users/:username`,
-  otherwise not-found) and all views.
+  otherwise not-found) and all views. The sidebar is shared by the home and
+  profile pages: `sidebarMarkup()` renders it and `initSidebar()` handles sign-in,
+  sign-out and the signed-in identity, with `onSession` and `onProfile` hooks (the
+  home page uses them for the composer). Change the sidebar in those two
+  functions, not per page.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.

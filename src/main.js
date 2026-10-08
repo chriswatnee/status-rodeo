@@ -22,39 +22,7 @@ function renderHome() {
     <main class="site">
 
       <div class="app-layout">
-        <aside class="sidebar">
-          <section id="sidebar-profile" class="sidebar-profile" hidden>
-            <span id="sidebar-avatar"></span>
-            <div class="sidebar-identity">
-              <strong id="sidebar-display-name"></strong>
-              <span id="sidebar-username"></span>
-              <a id="view-profile-link" href="#">View profile</a>
-            </div>
-          </section>
-
-          <section id="login" class="login" hidden>
-            <label for="email-input">Email</label>
-            <input id="email-input" type="email" />
-
-            <label for="password-input">Password</label>
-            <input id="password-input" type="password" />
-
-            <button type="button">Sign in</button>
-          </section>
-
-          <nav class="site-nav">
-            <a href="/" aria-current="page">Home</a>
-            <a id="profile-link" href="#" hidden>My profile</a>
-          </nav>
-
-          <div class="auth-info">
-            <span id="auth-status"></span>
-            <span id="auth-separator" hidden>·</span>
-            <button id="sign-out-button" type="button" hidden>
-              Sign out
-            </button>
-          </div>
-        </aside>
+        ${sidebarMarkup('home')}
 
         <div class="main-content">
           <section class="composer" hidden>
@@ -86,94 +54,37 @@ function renderHome() {
     </main>
   `;
 
-  const sidebarProfile = document.querySelector('#sidebar-profile');
-  const sidebarAvatar = document.querySelector('#sidebar-avatar');
-  const sidebarDisplayName = document.querySelector('#sidebar-display-name');
-  const sidebarUsername = document.querySelector('#sidebar-username');
-  const viewProfileLink = document.querySelector('#view-profile-link');
-  const profileLink = document.querySelector('#profile-link');
-
-  const loginSection = document.querySelector('#login');
   const composer = document.querySelector('.composer');
   const composerAvatar = document.querySelector('#composer-avatar');
-  const signOutButton = document.querySelector('#sign-out-button');
-  const authStatus = document.querySelector('#auth-status');
-  const authSeparator = document.querySelector('#auth-separator');
   const statusInput = document.querySelector('#status-input');
   const postButton = document.querySelector('.composer button');
   const charCount = document.querySelector('#char-count');
   const composerNote = document.querySelector('#composer-note');
   const charAnnounce = document.querySelector('#char-announce');
   const feed = document.querySelector('.feed');
-  const emailInput = document.querySelector('#email-input');
-  const passwordInput = document.querySelector('#password-input');
-  const signInButton = document.querySelector('.login button');
 
-  async function loadProfile(userId) {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('username, display_name')
-      .eq('user_id', userId)
-      .single();
+  // The sidebar is shared with the profile page. The home page only adds what
+  // belongs to the composer: it is shown when signed in and shows the user's avatar.
+  initSidebar({
+    onSession(session) {
+      composer.hidden = !session;
 
-    if (error) {
-      console.error(error);
-      composerAvatar.replaceChildren();
-      return;
-    }
-
-    // Avoid displaying a profile if the user signed out
-    // while the request was running.
-    const { data: sessionData } = await supabase.auth.getSession();
-
-    if (sessionData.session?.user.id !== userId) {
-      return;
-    }
-
-    sidebarDisplayName.textContent = profile.display_name;
-    sidebarUsername.textContent = `@${profile.username}`;
-    sidebarAvatar.replaceChildren(
-      createAvatar(profile.username, profile.display_name)
-    );
-    composerAvatar.replaceChildren(
-      createAvatar(profile.username, profile.display_name)
-    );
-
-    viewProfileLink.href = `/users/${profile.username}`;
-    profileLink.href = `/users/${profile.username}`;
-
-    sidebarProfile.hidden = false;
-    profileLink.hidden = false;
-  }
-
-  function updateAuthUI(session) {
-    if (session) {
-      loginSection.hidden = true;
-      composer.hidden = false;
-      signOutButton.hidden = false;
-      authSeparator.hidden = false;
-      authStatus.textContent = 'Signed in';
-      composerAvatar.replaceChildren(createLoadingAvatar());
-
-      loadProfile(session.user.id);
-    } else {
-      loginSection.hidden = false;
-      composer.hidden = true;
-      signOutButton.hidden = true;
-      authSeparator.hidden = true;
-      authStatus.textContent = '';
-
-      sidebarProfile.hidden = true;
-      profileLink.hidden = true;
-
-      sidebarDisplayName.textContent = '';
-      sidebarUsername.textContent = '';
-      sidebarAvatar.replaceChildren();
-      composerAvatar.replaceChildren();
-      viewProfileLink.href = '#';
-      profileLink.href = '#';
-    }
-  }
+      if (session) {
+        composerAvatar.replaceChildren(createLoadingAvatar());
+      } else {
+        composerAvatar.replaceChildren();
+      }
+    },
+    onProfile(profile) {
+      if (profile) {
+        composerAvatar.replaceChildren(
+          createAvatar(profile.username, profile.display_name)
+        );
+      } else {
+        composerAvatar.replaceChildren();
+      }
+    },
+  });
 
   let posting = false;
   let announceTimer;
@@ -346,51 +257,9 @@ function renderHome() {
     }
   }
 
-  async function signIn() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: emailInput.value,
-      password: passwordInput.value,
-    });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    updateAuthUI(data.session);
-  }
-
-  async function signOut() {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    emailInput.value = '';
-    passwordInput.value = '';
-    updateAuthUI(null);
-  }
-
-  async function loadSession() {
-    const { data, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error(error);
-      updateAuthUI(null);
-      return;
-    }
-
-    updateAuthUI(data.session);
-  }
-
   postButton.addEventListener('click', postStatus);
-  signInButton.addEventListener('click', signIn);
-  signOutButton.addEventListener('click', signOut);
 
   loadStatus();
-  loadSession();
 }
 
 async function renderUserPage(username) {
@@ -399,11 +268,7 @@ async function renderUserPage(username) {
     <main class="site">
 
       <div class="app-layout">
-        <aside class="sidebar">
-          <nav class="site-nav">
-            <a href="/">Home</a>
-          </nav>
-        </aside>
+        ${sidebarMarkup()}
 
         <div class="main-content">
           <section class="profile">
@@ -422,6 +287,8 @@ async function renderUserPage(username) {
       </div>
     </main>
   `;
+
+  initSidebar({ currentUsername: username });
 
   const profileAvatar = document.querySelector('#profile-avatar');
   const profileName = document.querySelector('#profile-name');
@@ -472,6 +339,179 @@ async function renderUserPage(username) {
       })
     );
   }
+}
+
+// The sidebar is the same on the home page and on profile pages: the signed-in
+// user's identity or the sign-in form, the navigation, and Sign out.
+function sidebarMarkup(current) {
+  return `
+        <aside class="sidebar">
+          <section id="sidebar-profile" class="sidebar-profile" hidden>
+            <span id="sidebar-avatar"></span>
+            <div class="sidebar-identity">
+              <strong id="sidebar-display-name"></strong>
+              <span id="sidebar-username"></span>
+              <a id="view-profile-link" href="#">View profile</a>
+            </div>
+          </section>
+
+          <section id="login" class="login" hidden>
+            <label for="email-input">Email</label>
+            <input id="email-input" type="email" />
+
+            <label for="password-input">Password</label>
+            <input id="password-input" type="password" />
+
+            <button type="button">Sign in</button>
+          </section>
+
+          <nav class="site-nav">
+            <a href="/"${current === 'home' ? ' aria-current="page"' : ''}>Home</a>
+            <a id="profile-link" href="#" hidden>My profile</a>
+          </nav>
+
+          <div class="auth-info">
+            <span id="auth-status"></span>
+            <span id="auth-separator" hidden>·</span>
+            <button id="sign-out-button" type="button" hidden>
+              Sign out
+            </button>
+          </div>
+        </aside>
+  `;
+}
+
+// Wires up the sidebar. `onSession(session)` runs whenever the signed-in state
+// is known or changes, and `onProfile(profile)` when the signed-in user's profile
+// has loaded (or failed to, with null). `currentUsername` is the profile being
+// viewed, so "My profile" is marked as the current page on your own profile.
+function initSidebar({ onSession, onProfile, currentUsername } = {}) {
+  const sidebarProfile = document.querySelector('#sidebar-profile');
+  const sidebarAvatar = document.querySelector('#sidebar-avatar');
+  const sidebarDisplayName = document.querySelector('#sidebar-display-name');
+  const sidebarUsername = document.querySelector('#sidebar-username');
+  const viewProfileLink = document.querySelector('#view-profile-link');
+  const profileLink = document.querySelector('#profile-link');
+
+  const loginSection = document.querySelector('#login');
+  const signOutButton = document.querySelector('#sign-out-button');
+  const authStatus = document.querySelector('#auth-status');
+  const authSeparator = document.querySelector('#auth-separator');
+  const emailInput = document.querySelector('#email-input');
+  const passwordInput = document.querySelector('#password-input');
+  const signInButton = document.querySelector('.login button');
+
+  async function loadProfile(userId) {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('username, display_name')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error(error);
+      onProfile?.(null);
+      return;
+    }
+
+    // Avoid displaying a profile if the user signed out
+    // while the request was running.
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (sessionData.session?.user.id !== userId) {
+      return;
+    }
+
+    sidebarDisplayName.textContent = profile.display_name;
+    sidebarUsername.textContent = `@${profile.username}`;
+    sidebarAvatar.replaceChildren(
+      createAvatar(profile.username, profile.display_name)
+    );
+
+    viewProfileLink.href = `/users/${profile.username}`;
+    profileLink.href = `/users/${profile.username}`;
+
+    if (currentUsername === profile.username) {
+      profileLink.setAttribute('aria-current', 'page');
+    }
+
+    sidebarProfile.hidden = false;
+    profileLink.hidden = false;
+
+    onProfile?.(profile);
+  }
+
+  function updateAuthUI(session) {
+    onSession?.(session);
+
+    if (session) {
+      loginSection.hidden = true;
+      signOutButton.hidden = false;
+      authSeparator.hidden = false;
+      authStatus.textContent = 'Signed in';
+
+      loadProfile(session.user.id);
+    } else {
+      loginSection.hidden = false;
+      signOutButton.hidden = true;
+      authSeparator.hidden = true;
+      authStatus.textContent = '';
+
+      sidebarProfile.hidden = true;
+      profileLink.hidden = true;
+      profileLink.removeAttribute('aria-current');
+
+      sidebarDisplayName.textContent = '';
+      sidebarUsername.textContent = '';
+      sidebarAvatar.replaceChildren();
+      viewProfileLink.href = '#';
+      profileLink.href = '#';
+    }
+  }
+
+  async function signIn() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: emailInput.value,
+      password: passwordInput.value,
+    });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    updateAuthUI(data.session);
+  }
+
+  async function signOut() {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    emailInput.value = '';
+    passwordInput.value = '';
+    updateAuthUI(null);
+  }
+
+  async function loadSession() {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error(error);
+      updateAuthUI(null);
+      return;
+    }
+
+    updateAuthUI(data.session);
+  }
+
+  signInButton.addEventListener('click', signIn);
+  signOutButton.addEventListener('click', signOut);
+
+  loadSession();
 }
 
 function renderNotFound() {
