@@ -1,5 +1,5 @@
 -- Status Rodeo schema export, generated 2026-10-06 from the live database, plus the
--- statuses_content_length_check constraint added on 2026-10-08.
+-- statuses_content_check constraint, verified against production on 2026-10-08.
 -- Covers tables, foreign keys, a check constraint, RLS, and policies.
 -- Table grants are not included: anon and authenticated hold the Supabase default
 -- grants on both tables.
@@ -32,12 +32,16 @@ alter table public.statuses
   add constraint statuses_user_id_fkey1
   foreign key (user_id) references public.profiles(user_id);
 
--- Added 2026-10-08: statuses are 1 to 280 characters (Unicode code points, the same
--- count the browser uses) and cannot be blank. Applied to production and validated
--- against the existing rows.
+-- Statuses are 1 to 280 characters (Unicode code points, the same count the browser
+-- uses) and cannot be blank. Checked against the production constraint on
+-- 2026-10-08. Postgres stores it as
+-- CHECK (char_length(content) >= 1 AND char_length(content) <= 280 AND content !~ '^\s*$').
 alter table public.statuses
-  add constraint statuses_content_length_check
-  check (char_length(content) <= 280 and content !~ '^\s*$');
+  add constraint statuses_content_check
+  check (
+    char_length(content) between 1 and 280
+    and content !~ '^\s*$'
+  );
 
 alter table public.profiles enable row level security;
 alter table public.statuses enable row level security;
