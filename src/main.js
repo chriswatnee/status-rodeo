@@ -3,6 +3,35 @@ import { supabase } from './supabase.js';
 import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
 import { submitStatus } from './post-status.js';
 
+// Pauses before the second and third attempts at an image that failed to load.
+// The query string keeps a retry from being answered by a cached failure.
+const IMAGE_RETRY_DELAYS = [1500, 4000];
+
+function retryUrl(url, attempt) {
+  return attempt === 0 ? url : `${url}?retry=${attempt}`;
+}
+
+// The masthead is rendered as markup, so its failed loads are caught here. The
+// error event does not bubble, hence the capture phase.
+document.addEventListener(
+  'error',
+  (event) => {
+    const image = event.target;
+
+    if (!(image instanceof HTMLImageElement) || !image.classList.contains('masthead-image')) return;
+
+    const attempt = Number(image.dataset.retries || 0);
+
+    if (attempt >= IMAGE_RETRY_DELAYS.length) return;
+
+    image.dataset.retries = String(attempt + 1);
+    setTimeout(() => {
+      image.src = retryUrl('/masthead.webp', attempt + 1);
+    }, IMAGE_RETRY_DELAYS[attempt]);
+  },
+  true,
+);
+
 const app = document.querySelector('#app');
 const pathParts = window.location.pathname
   .split('/')
@@ -528,33 +557,45 @@ function renderNotFound() {
 // A user's avatar, expected at /avatars/<username>.webp. While the file loads the
 // slot shows a pulsing placeholder. Once it loads the image replaces the
 // placeholder. If it fails, or takes more than a few seconds, the slot shows the
-// first letter of the display name instead.
+// first letter of the display name instead. A failed load is retried twice in the
+// background, and the image replaces the letter if a retry succeeds. A user with
+// no avatar file costs two extra small requests.
 function createAvatar(username, displayName) {
   const avatar = document.createElement('span');
   avatar.className = 'avatar';
   avatar.dataset.state = 'loading';
   avatar.textContent = (displayName || username || '?').charAt(0).toUpperCase();
 
-  const image = new Image();
-  image.alt = '';
+  const url = `/avatars/${encodeURIComponent(username)}.webp`;
 
   const giveUp = setTimeout(() => {
     avatar.dataset.state = 'fallback';
   }, 8000);
 
-  image.addEventListener('load', () => {
-    clearTimeout(giveUp);
-    avatar.textContent = '';
-    avatar.append(image);
-    avatar.dataset.state = 'loaded';
-  });
+  function load(attempt) {
+    const image = new Image();
+    image.alt = '';
 
-  image.addEventListener('error', () => {
-    clearTimeout(giveUp);
-    avatar.dataset.state = 'fallback';
-  });
+    image.addEventListener('load', () => {
+      clearTimeout(giveUp);
+      avatar.textContent = '';
+      avatar.append(image);
+      avatar.dataset.state = 'loaded';
+    });
 
-  image.src = `/avatars/${encodeURIComponent(username)}.webp`;
+    image.addEventListener('error', () => {
+      clearTimeout(giveUp);
+      avatar.dataset.state = 'fallback';
+
+      if (attempt < IMAGE_RETRY_DELAYS.length) {
+        setTimeout(() => load(attempt + 1), IMAGE_RETRY_DELAYS[attempt]);
+      }
+    });
+
+    image.src = retryUrl(url, attempt);
+  }
+
+  load(0);
 
   return avatar;
 }
@@ -624,6 +665,7 @@ function createTimeElement(createdAt) {
 // It links home everywhere except the home page itself.
 function masthead(linkHome) {
   const image = `<img
+        class="masthead-image"
         src="/masthead.webp"
         width="3072"
         height="768"
