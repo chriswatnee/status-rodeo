@@ -24,8 +24,11 @@ with two users.
   `VITE_SUPABASE_PUBLISHABLE_KEY`. Without it, `env.VITE_...` is undefined and
   the endpoints return 500. `.dev.vars` is gitignored.
 
-There are no tests or linters. Before finishing a change, run `npm run build` and
-check the affected pages in the browser.
+- `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
+  length rule and the posting logic in `tests/`.
+
+There are no linters. Before finishing a change, run `npm test` and
+`npm run build`, and check the affected pages in the browser.
 
 ## Deployment
 
@@ -54,6 +57,9 @@ fallback. No `_redirects` file is needed.
 
 - `src/main.js` holds client-side routing by pathname (`/`, `/users/:username`,
   otherwise not-found) and all views.
+- `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
+  it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
+  status. Both are plain modules with unit tests.
 - API handlers live in `functions/api/`.
 - The folder `functions/api/users/[username]/` must be named with literal square
   brackets. With any other name, `params.username` is undefined.
@@ -88,6 +94,10 @@ and `profiles.user_id`; `profiles.user_id` references `auth.users.id`. Keep the
 returns PGRST200.
 
 Other facts:
+- Posting writes directly from the browser to Supabase (the Cloudflare Functions
+  are read-only). The 280-character limit is enforced in the browser. A database
+  CHECK constraint for it is proposed but, unless this note has been updated, not
+  applied; `content` has no length constraint in `supabase/schema.sql`.
 - The app only uses `visibility = 'public'`. There is no CHECK constraint on
   `visibility`.
 - No trigger creates a profile when an Auth user is created. Profiles are
@@ -157,6 +167,13 @@ kept outside the repo), rendered full width above the app by the `masthead()`
 helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
 `/` on every page except the home page.
 
+Composer: a live `0/280` counter sits left of the Post button in the existing
+muted colour. It turns rust and bold with 20 or fewer characters left, and a
+visually hidden live region announces the remaining count there. Typing and
+pasting stop at 280 Unicode code points (nothing already typed is removed), empty
+or over-limit statuses are not sent, and a failed post keeps the text and shows a
+short message under the buttons.
+
 Loading states: the masthead reserves its 4:1 space with a plain colour. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
@@ -185,5 +202,4 @@ Target:
 
 A mockup is a visual reference, not a feature list. These controls appear in it
 but are not built, and are not to be added without asking: Settings, a "Post a
-status" nav link, a users list, sort controls, per-status menus, a character
-counter.
+status" nav link, a users list, sort controls, per-status menus.

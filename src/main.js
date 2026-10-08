@@ -1,5 +1,7 @@
 import './style.css';
 import { supabase } from './supabase.js';
+import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
+import { submitStatus } from './post-status.js';
 
 const app = document.querySelector('#app');
 const pathParts = window.location.pathname
@@ -63,10 +65,15 @@ function renderHome() {
                 id="status-input"
                 rows="1"
                 placeholder="This ain't my first rodeo."
+                aria-describedby="char-help"
               ></textarea>
+              <span id="char-help" class="visually-hidden">${STATUS_LIMIT} characters maximum.</span>
               <div class="composer-actions">
+                <span id="char-count" class="char-count" aria-hidden="true">0/${STATUS_LIMIT}</span>
                 <button type="button">Post</button>
               </div>
+              <p id="composer-note" class="composer-note" role="status"></p>
+              <p id="char-announce" class="visually-hidden" role="status"></p>
             </div>
           </section>
 
@@ -94,6 +101,9 @@ function renderHome() {
   const authSeparator = document.querySelector('#auth-separator');
   const statusInput = document.querySelector('#status-input');
   const postButton = document.querySelector('.composer button');
+  const charCount = document.querySelector('#char-count');
+  const composerNote = document.querySelector('#composer-note');
+  const charAnnounce = document.querySelector('#char-announce');
   const feed = document.querySelector('.feed');
   const emailInput = document.querySelector('#email-input');
   const passwordInput = document.querySelector('#password-input');
@@ -165,35 +175,114 @@ function renderHome() {
     }
   }
 
+  let posting = false;
+  let announceTimer;
+
+  const postErrors = {
+    'too-long': `Statuses can be at most ${STATUS_LIMIT} characters.`,
+    'not-signed-in': 'Sign in again to post.',
+    'insert-failed': "Couldn't post your status. Try again.",
+  };
+
+  function updateCounter() {
+    const count = countCharacters(statusInput.value);
+    const remaining = STATUS_LIMIT - count;
+
+    charCount.textContent = `${count}/${STATUS_LIMIT}`;
+    charCount.classList.toggle('char-count-near', remaining <= 20);
+
+    // Screen readers hear nothing until the limit is close, and then only the
+    // settled value, so typing does not produce a stream of announcements.
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      if (remaining > 20) {
+        charAnnounce.textContent = '';
+      } else if (remaining <= 0) {
+        charAnnounce.textContent = 'Character limit reached.';
+      } else {
+        charAnnounce.textContent = `${remaining} characters left.`;
+      }
+    }, 500);
+  }
+
+  // Typing and pasting stop at the limit. beforeinput lets the part of an
+  // insertion that fits go in, without removing any text that is already there.
+  statusInput.addEventListener('beforeinput', (event) => {
+    if (event.isComposing || !event.inputType.startsWith('insert')) {
+      return;
+    }
+
+    let text = event.data ?? event.dataTransfer?.getData('text/plain') ?? '';
+
+    if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
+      text = '\n';
+    }
+
+    if (!text) {
+      return;
+    }
+
+    const { value, selectionStart, selectionEnd } = statusInput;
+    const room =
+      STATUS_LIMIT -
+      countCharacters(value) +
+      countCharacters(value.slice(selectionStart, selectionEnd));
+
+    if (countCharacters(text) <= room) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const fitted = truncateToLimit(text, room);
+
+    if (fitted) {
+      statusInput.setRangeText(fitted, selectionStart, selectionEnd, 'end');
+    }
+
+    statusInput.dispatchEvent(new Event('input'));
+  });
+
+  statusInput.addEventListener('input', () => {
+    // Safety net for input that beforeinput cannot cancel (IME, drag and drop).
+    if (countCharacters(statusInput.value) > STATUS_LIMIT) {
+      const caret = statusInput.selectionStart;
+
+      statusInput.value = truncateToLimit(statusInput.value);
+      statusInput.setSelectionRange(
+        Math.min(caret, statusInput.value.length),
+        Math.min(caret, statusInput.value.length)
+      );
+    }
+
+    composerNote.textContent = '';
+    updateCounter();
+  });
+
   async function postStatus() {
-    const content = statusInput.value.trim();
-
-    if (!content) {
+    if (posting) {
       return;
     }
 
-    const { data, error } = await supabase.auth.getUser();
+    posting = true;
+    composerNote.textContent = '';
 
-    if (error || !data.user) {
-      console.error(error || 'Not signed in.');
-      return;
-    }
+    const result = await submitStatus(supabase, statusInput.value);
 
-    const user = data.user;
+    posting = false;
 
-    const { error: insertError } = await supabase
-      .from('statuses')
-      .insert({
-        user_id: user.id,
-        content,
-      });
+    if (!result.ok) {
+      // The text stays in the composer so nothing the user wrote is lost.
+      if (result.reason === 'insert-failed' || result.reason === 'not-signed-in') {
+        console.error(result.error);
+      }
 
-    if (insertError) {
-      console.error(insertError);
+      composerNote.textContent = postErrors[result.reason] ?? '';
       return;
     }
 
     statusInput.value = '';
+    updateCounter();
     await loadStatus();
   }
 
