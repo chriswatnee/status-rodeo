@@ -157,6 +157,12 @@ kept outside the repo), rendered full width above the app by the `masthead()`
 helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
 `/` on every page except the home page.
 
+Loading states: the masthead reserves its 4:1 space with a plain colour. Avatars
+(`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
+`aria-busy`) show pulsing placeholders until their data arrives, and the
+sign-in form stays hidden until the session is known. An avatar that fails or
+takes over 8 seconds falls back to its letter. There is no retry.
+
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a
   screenshot of the app or a page background. The words "Status Rodeo" are part

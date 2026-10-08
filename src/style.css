@@ -105,6 +105,12 @@ textarea:focus-visible {
 
 /* The masthead is full width, above the app. Its image keeps a 4:1 ratio. */
 
+.masthead {
+  /* Reserves the space (and shows a plain color) until the image arrives. */
+  aspect-ratio: 4 / 1;
+  background: var(--avatar-bg);
+}
+
 .masthead img {
   display: block;
   width: 100%;
@@ -163,6 +169,59 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Loading placeholders */
+
+.avatar[data-state='loading'] {
+  color: transparent;
+}
+
+.avatar[data-state='loading'],
+.skeleton-avatar,
+.skeleton-lines span {
+  background-color: var(--avatar-bg);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: var(--radius-small);
+}
+
+.skeleton-lines {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.skeleton-lines span {
+  height: 0.9rem;
+  border-radius: 0.25rem;
+}
+
+.skeleton-lines span:first-child {
+  width: 12rem;
+  max-width: 40%;
+}
+
+.skeleton-lines span:last-child {
+  width: 28rem;
+  max-width: 85%;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    background-color: var(--band);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar[data-state='loading'],
+  .skeleton-avatar,
+  .skeleton-lines span {
+    animation: none;
+  }
 }
 
 /* Sidebar */
@@ -397,7 +456,8 @@ textarea:focus-visible {
   display: none;
 }
 
-.status {
+.status,
+.status-skeleton {
   display: grid;
   grid-template-columns: var(--avatar) 1fr;
   gap: 1rem;
@@ -406,7 +466,8 @@ textarea:focus-visible {
   border-top: 1px solid var(--divider);
 }
 
-.status:first-child {
+.status:first-child,
+.status-skeleton:first-child {
   border-top: 0;
 }
 
