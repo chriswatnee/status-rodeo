@@ -175,7 +175,10 @@ for the feed heading, profile name and avatar letters). The masthead is
 `public/masthead.webp` (3072x768, 4:1, quality-90 WebP; the original PNG is
 kept outside the repo), rendered full width above the app by the `masthead()`
 helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
-`/` on every page except the home page.
+`/` on every page except the home page. Under 640px a `<picture>` source swaps in
+`public/masthead-mobile.webp` (1536x768, 2:1, quality-90 WebP): a tighter crop of
+the same artwork (cowboy, horse, dog and the sign, from x 614 to 2150 of the
+3072px original) so the sign stays readable, and the placeholder becomes 2:1.
 
 Composer: a live `0/280` counter sits left of the Post button in the existing
 muted colour. It turns rust and bold with 20 or fewer characters left, and a
@@ -215,8 +218,9 @@ Target:
   avatar or the interface must never require changing the masthead.
 - Times stay absolute (for example "Oct 7, 6:40 AM"). The mockup's relative
   times are illustrative; do not change this without asking.
-- The mobile layout is designed deliberately later (re-crop the masthead,
-  collapse the columns), not by scaling the desktop layout down.
+- The mobile layout is designed deliberately, not by scaling the desktop layout
+  down. The masthead crop is done; the column collapse and the rest of the phone
+  layout are still to be reviewed.
 
 A mockup is a visual reference, not a feature list. These controls appear in it
 but are not built, and are not to be added without asking: Settings, a "Post a

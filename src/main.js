@@ -30,14 +30,20 @@ document.addEventListener(
     if (!(image instanceof HTMLImageElement) || !image.classList.contains('masthead-image')) return;
 
     const attempt = Number(image.dataset.retries || 0);
+    // The file that failed: the phone crop or the desktop image, whichever the
+    // browser chose.
+    const failedUrl = image.currentSrc ? new URL(image.currentSrc).pathname : image.getAttribute('src');
 
-    warnImageFailed('/masthead.webp', attempt);
+    warnImageFailed(failedUrl, attempt);
 
     if (attempt >= IMAGE_RETRY_DELAYS.length) return;
 
     image.dataset.retries = String(attempt + 1);
     setTimeout(() => {
-      image.src = retryUrl('/masthead.webp', attempt + 1);
+      // A <source> takes priority over src, so drop the sources before retrying
+      // with the cache-busting URL.
+      image.parentElement.querySelectorAll('source').forEach((source) => source.remove());
+      image.src = retryUrl(failedUrl, attempt + 1);
     }, IMAGE_RETRY_DELAYS[attempt]);
   },
   true,
@@ -672,18 +678,28 @@ function createTimeElement(createdAt) {
   return time;
 }
 
-// The illustrated masthead is its own image asset (public/masthead.webp). The
-// words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
+// The illustrated masthead is its own image asset (public/masthead.webp, with a
+// tighter phone crop in public/masthead-mobile.webp). The words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
 // It links home everywhere except the home page itself.
 function masthead(linkHome) {
-  const image = `<img
-        class="masthead-image"
-        src="/masthead.webp"
-        width="3072"
-        height="768"
-        alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
-        fetchpriority="high"
-      />`;
+  // Phones get a tighter crop (cowboy, horse, dog and sign) so the sign stays
+  // readable. Desktop uses the full-width image.
+  const image = `<picture>
+        <source
+          media="(max-width: 639px)"
+          srcset="/masthead-mobile.webp"
+          width="1536"
+          height="768"
+        />
+        <img
+          class="masthead-image"
+          src="/masthead.webp"
+          width="3072"
+          height="768"
+          alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
+          fetchpriority="high"
+        />
+      </picture>`;
 
   return `
     <header class="masthead">
