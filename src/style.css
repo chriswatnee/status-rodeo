@@ -366,6 +366,11 @@ textarea:focus-visible {
   background: linear-gradient(var(--button-hover-top), var(--button-hover-bottom));
 }
 
+.composer button[aria-busy='true'] {
+  padding-inline: 0.5rem;
+  cursor: progress;
+}
+
 .login button:active,
 .composer button:active {
   background: linear-gradient(var(--button-active-top), var(--button-active-bottom));

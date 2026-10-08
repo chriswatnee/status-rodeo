@@ -178,7 +178,10 @@ muted colour. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty
 or over-limit statuses are not sent, and a failed post keeps the text and shows a
-short message under the buttons.
+short message under the buttons. While a post is in flight (until the feed has
+reloaded) the Post button reads "Posting…", keeps its width, is marked
+`aria-busy` and ignores further clicks; the text box is read-only until the
+insert finishes.
 
 Loading states: the masthead reserves its 4:1 space with a plain colour. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,

@@ -259,31 +259,55 @@ function renderHome() {
     updateCounter();
   });
 
+  const postLabel = postButton.textContent;
+
+  // While a post is in flight the button says so, keeps its width so nothing
+  // beside it moves, and ignores further clicks.
+  function setPosting(busy) {
+    posting = busy;
+
+    if (busy) {
+      postButton.style.width = `${postButton.getBoundingClientRect().width}px`;
+      postButton.textContent = 'Posting…';
+      postButton.setAttribute('aria-busy', 'true');
+    } else {
+      postButton.textContent = postLabel;
+      postButton.removeAttribute('aria-busy');
+      postButton.style.width = '';
+    }
+  }
+
   async function postStatus() {
     if (posting) {
       return;
     }
 
-    posting = true;
+    setPosting(true);
+    statusInput.readOnly = true;
     composerNote.textContent = '';
 
-    const result = await submitStatus(supabase, statusInput.value);
+    try {
+      const result = await submitStatus(supabase, statusInput.value);
 
-    posting = false;
+      statusInput.readOnly = false;
 
-    if (!result.ok) {
-      // The text stays in the composer so nothing the user wrote is lost.
-      if (result.reason === 'insert-failed' || result.reason === 'not-signed-in') {
-        console.error(result.error);
+      if (!result.ok) {
+        // The text stays in the composer so nothing the user wrote is lost.
+        if (result.reason === 'insert-failed' || result.reason === 'not-signed-in') {
+          console.error(result.error);
+        }
+
+        composerNote.textContent = postErrors[result.reason] ?? '';
+        return;
       }
 
-      composerNote.textContent = postErrors[result.reason] ?? '';
-      return;
+      statusInput.value = '';
+      updateCounter();
+      await loadStatus();
+    } finally {
+      statusInput.readOnly = false;
+      setPosting(false);
     }
-
-    statusInput.value = '';
-    updateCounter();
-    await loadStatus();
   }
 
   async function loadStatus() {
