@@ -11,6 +11,15 @@ function retryUrl(url, attempt) {
   return attempt === 0 ? url : `${url}?retry=${attempt}`;
 }
 
+// Failed loads are logged so the cause can be traced from the browser console.
+function warnImageFailed(url, attempt) {
+  const willRetry = attempt < IMAGE_RETRY_DELAYS.length;
+
+  console.warn(
+    `Image failed to load: ${url} (attempt ${attempt + 1} of ${IMAGE_RETRY_DELAYS.length + 1}, ${willRetry ? 'will retry' : 'giving up'})`,
+  );
+}
+
 // The masthead is rendered as markup, so its failed loads are caught here. The
 // error event does not bubble, hence the capture phase.
 document.addEventListener(
@@ -21,6 +30,8 @@ document.addEventListener(
     if (!(image instanceof HTMLImageElement) || !image.classList.contains('masthead-image')) return;
 
     const attempt = Number(image.dataset.retries || 0);
+
+    warnImageFailed('/masthead.webp', attempt);
 
     if (attempt >= IMAGE_RETRY_DELAYS.length) return;
 
@@ -586,6 +597,7 @@ function createAvatar(username, displayName) {
     image.addEventListener('error', () => {
       clearTimeout(giveUp);
       avatar.dataset.state = 'fallback';
+      warnImageFailed(url, attempt);
 
       if (attempt < IMAGE_RETRY_DELAYS.length) {
         setTimeout(() => load(attempt + 1), IMAGE_RETRY_DELAYS[attempt]);
