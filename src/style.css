@@ -33,6 +33,7 @@
   --nav-active: #f8d9ac;
   --avatar-bg: #ecd3ab;
   --avatar-border: #3a2414;
+  --warn: #a2391a;
 
   --radius: 0.6rem;
   --radius-small: 0.4rem;
@@ -409,7 +410,31 @@ textarea:focus-visible {
 
 .composer-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 1rem;
+}
+
+.char-count {
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.char-count-near {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.composer-note {
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.composer-note:empty {
+  display: none;
 }
 
 /* Profile header */
