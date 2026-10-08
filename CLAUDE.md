@@ -82,7 +82,7 @@ either disagrees with it, trust the database and fix them.
 
 Tables:
 - `statuses`: `id` int8 identity primary key, `user_id` uuid not null, `content`
-  text not null, `visibility` text not null default `'public'`, `created_at`
+  text not null (1 to 280 characters, see below), `visibility` text not null default `'public'`, `created_at`
   timestamptz default now().
 - `profiles`: `user_id` uuid primary key, `created_at` timestamptz default now(),
   `username` text not null unique, `display_name` text not null.
@@ -95,11 +95,17 @@ returns PGRST200.
 
 Other facts:
 - Posting writes directly from the browser to Supabase (the Cloudflare Functions
-  are read-only). The 280-character limit is enforced in the browser. A database
-  CHECK constraint for it is proposed but, unless this note has been updated, not
-  applied; `content` has no length constraint in `supabase/schema.sql`.
+  are read-only). A status is 1 to 280 characters and cannot be blank. This is
+  enforced twice: in the browser (`src/status-limit.js`) and by the database CHECK
+  constraint `statuses_content_length_check` on `statuses.content`
+  (`char_length(content) <= 280 and content !~ '^\s*$'`), which was added on
+  2026-10-08 and validated against the existing rows. Both count Unicode code
+  points (Postgres `char_length`), so an emoji is 1 character and a flag is 2. A
+  violation comes back as Postgres error `23514`; the browser shows its generic
+  "Couldn't post" message and keeps the text. If you change the limit, change it in
+  both places.
 - The app only uses `visibility = 'public'`. There is no CHECK constraint on
-  `visibility`.
+  `visibility`. `statuses_content_length_check` is the only CHECK constraint.
 - No trigger creates a profile when an Auth user is created. Profiles are
   provisioned by hand, so creating an Auth user alone does not give a working
   account.
