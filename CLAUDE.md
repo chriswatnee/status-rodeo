@@ -194,7 +194,9 @@ sign-in form stays hidden until the session is known. An avatar that fails or
 takes over 8 seconds falls back to its letter. A failed avatar or masthead load
 is retried twice in the background (after 1.5 s and 4 s, with a `?retry=n` query
 so a cached failure is not reused), and a retry that succeeds replaces the
-letter. A user with no avatar file costs two extra small requests.
+letter. Each failed attempt is logged with `console.warn` (URL and attempt number)
+to help trace why images fail. A user with no avatar file costs two extra small
+requests and warnings.
 
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a
