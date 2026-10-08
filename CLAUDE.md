@@ -191,7 +191,10 @@ Loading states: the masthead reserves its 4:1 space with a plain colour. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
 sign-in form stays hidden until the session is known. An avatar that fails or
-takes over 8 seconds falls back to its letter. There is no retry.
+takes over 8 seconds falls back to its letter. A failed avatar or masthead load
+is retried twice in the background (after 1.5 s and 4 s, with a `?retry=n` query
+so a cached failure is not reused), and a retry that succeeds replaces the
+letter. A user with no avatar file costs two extra small requests.
 
 Target:
 - A wide illustrated masthead above the app. It is its own image asset, never a
