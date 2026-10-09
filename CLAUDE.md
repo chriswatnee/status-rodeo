@@ -269,7 +269,7 @@ gave it focus and lost the click. Keep that layer if you change the press effect
 wrapped in `@media (hover: hover)` so phones never get them (an animated hover style
 can make iOS treat the first tap as "just hovering" and skip the click), and links,
 buttons and selects have `touch-action: manipulation`. Put new `:hover` rules inside
-that media query. Keep motion short and subtle, and turn it off under
+that media query, and don't animate a hover colour (a `transition` on `background-color`). Keep motion short and subtle, and turn it off under
 `prefers-reduced-motion`.
 
 Profile page: the header card shows the avatar, display name and one muted line,

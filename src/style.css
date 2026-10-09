@@ -729,7 +729,9 @@ textarea:focus-visible {
 }
 
 .feed-more button {
-  transition: transform 0.12s ease-out, background-color 0.12s;
+  /* Only the press-down animates. A fading hover colour is what makes iOS treat
+     a first tap as "just hovering", so the colour changes instantly. */
+  transition: transform 0.12s ease-out;
 }
 
 .feed-more button:active:not(:disabled) {
