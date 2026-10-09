@@ -110,6 +110,13 @@ textarea {
   font: inherit;
 }
 
+/* Taps act at once: no waiting to see whether a second tap is a double-tap zoom. */
+a,
+button,
+select {
+  touch-action: manipulation;
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -382,8 +389,15 @@ textarea:focus-visible {
   color: var(--warn);
 }
 
-.site-nav a:hover {
-  background: var(--band);
+/*
+  Hover styles apply only where the device really hovers (a mouse or trackpad).
+  On a phone, a first tap that triggers an animated hover style can be treated as
+  "just hovering", and the click is skipped until the next tap.
+*/
+@media (hover: hover) {
+  .site-nav a:hover {
+    background: var(--band);
+  }
 }
 
 .site-nav a[aria-current='page'] {
@@ -455,8 +469,10 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-#sign-out-button:hover {
-  background: var(--band);
+@media (hover: hover) {
+  #sign-out-button:hover {
+    background: var(--band);
+  }
 }
 
 #sign-out-button[hidden] {
@@ -483,9 +499,11 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-.login button:hover,
-.composer button:hover {
-  background: linear-gradient(var(--button-hover-top), var(--button-hover-bottom));
+@media (hover: hover) {
+  .login button:hover,
+  .composer button:hover {
+    background: linear-gradient(var(--button-hover-top), var(--button-hover-bottom));
+  }
 }
 
 .composer button[aria-busy='true'] {
@@ -685,8 +703,10 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-.sort-select:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .sort-select:hover {
+    text-decoration: underline;
+  }
 }
 
 .feed:empty {
@@ -806,8 +826,10 @@ textarea:focus-visible {
   }
 }
 
-.feed-more button:hover {
-  background: var(--band);
+@media (hover: hover) {
+  .feed-more button:hover {
+    background: var(--band);
+  }
 }
 
 /* The panel clips overflow, so the focus ring is drawn inside the button. */
@@ -896,8 +918,10 @@ textarea:focus-visible {
   text-decoration: none;
 }
 
-.status-name:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .status-name:hover {
+    text-decoration: underline;
+  }
 }
 
 .status-meta time {
