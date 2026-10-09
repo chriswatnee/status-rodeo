@@ -1109,4 +1109,6 @@ function setMastheadLink(linkHome) {
   }
 }
 
+if (new URLSearchParams(window.location.search).has('debug')) import('./tap-debug.js'); // TEMPORARY, debug-taps branch only
+
 route();
