@@ -262,7 +262,10 @@ added by "Show older / newer" spring up one after another (`.status-enter`, 0.45
 (`.status-fade`, 0.3s) after the sort order changes. The first page load is not
 animated. After a navigation the page area (not the masthead or sidebar) fades
 and slides in (`.page-enter`, 0.3s); the first load is not animated. Buttons press down (scale 0.96) when clicked, and "Show older" pulses
-while loading. Keep motion short and subtle, and turn it off under
+while loading. A pressed button's tappable area shrinks with it, so each of those
+buttons has an invisible `::after` layer (`inset: -3%`) that keeps the full area
+tappable; without it a press near the edge of the wide "Show older" button only
+gave it focus and lost the click. Keep that layer if you change the press effect. Keep motion short and subtle, and turn it off under
 `prefers-reduced-motion`.
 
 Profile page: the header card shows the avatar, display name and one muted line,
