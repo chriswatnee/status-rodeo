@@ -136,6 +136,15 @@ document.addEventListener('click', (event) => {
 
   const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
 
+  // "Skip to content" moves focus past the sidebar. It is handled here rather
+  // than as a plain #page link, which would add a hash to the address and
+  // trigger a popstate.
+  if (link?.classList.contains('skip-link')) {
+    event.preventDefault();
+    frame.page.focus();
+    return;
+  }
+
   if (!link || link.target || link.hasAttribute('download')) return;
   if (link.getAttribute('href').startsWith('#')) return;
 
@@ -156,6 +165,7 @@ window.addEventListener('popstate', () => route(true));
 function mount(markup, { linkHome }) {
   if (!frame) {
     app.innerHTML = `
+      <a class="skip-link" href="#page">Skip to content</a>
       ${masthead()}
       <main class="site">
         <div class="app-layout">

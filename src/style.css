@@ -119,6 +119,25 @@ textarea:focus-visible {
   border: 0;
 }
 
+/* Off-screen until it has keyboard focus, then shown at the top left. */
+.skip-link {
+  position: fixed;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 10;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  color: var(--link);
+  box-shadow: 0 2px 8px rgba(60, 30, 10, 0.25);
+  transform: translateY(-250%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
 /* Page */
 
 .site {
