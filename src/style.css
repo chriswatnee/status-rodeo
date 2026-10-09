@@ -522,6 +522,35 @@ textarea:focus-visible {
   display: none;
 }
 
+.feed-more {
+  border-top: 1px solid var(--divider);
+}
+
+.feed-more button {
+  display: block;
+  width: 100%;
+  padding: 0.7rem var(--inset);
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.feed-more button:hover {
+  background: var(--band);
+}
+
+/* The panel clips overflow, so the focus ring is drawn inside the button. */
+.feed-more button:focus-visible {
+  outline-offset: -4px;
+}
+
+.feed-more button:disabled {
+  color: var(--muted);
+  cursor: progress;
+}
+
 .feed-message {
   margin: 0;
   padding: 0.9rem var(--inset);

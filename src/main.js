@@ -332,6 +332,9 @@ async function renderUserPage(username) {
           <section class="feed-panel">
             <h2 class="panel-heading">Recent Statuses</h2>
             <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
+            <div class="feed-more" hidden>
+              <button type="button">Show older</button>
+            </div>
           </section>
         </div>
       </div>
@@ -345,6 +348,8 @@ async function renderUserPage(username) {
   const profileUsername = document.querySelector('#profile-username');
   const profileMeta = document.querySelector('#profile-meta');
   const feed = document.querySelector('.feed');
+  const feedMore = document.querySelector('.feed-more');
+  const showOlderButton = feedMore.querySelector('button');
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -372,21 +377,54 @@ async function renderUserPage(username) {
   profileMeta.textContent = joined;
   profileMeta.hidden = false;
 
-  const [{ data: statuses, error: statusesError }, { count, error: countError }] =
-    await Promise.all([
-      supabase
-        .from('statuses')
-        .select('content, created_at')
-        .eq('user_id', profile.user_id)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(5),
-      supabase
-        .from('statuses')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', profile.user_id)
-        .eq('visibility', 'public'),
-    ]);
+  // Statuses come five at a time, newest first. One extra row is requested so we
+  // know whether there is an older page, and the next page starts below the
+  // oldest status shown (compared on created_at exactly as the database returned
+  // it), so a status posted meanwhile can't shift or repeat rows.
+  const PAGE_SIZE = 5;
+  let oldestShown = null;
+
+  async function fetchPage() {
+    let query = supabase
+      .from('statuses')
+      .select('content, created_at')
+      .eq('user_id', profile.user_id)
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZE + 1);
+
+    if (oldestShown) query = query.lt('created_at', oldestShown);
+
+    const { data, error } = await query;
+
+    if (error) return { error };
+
+    return { rows: data.slice(0, PAGE_SIZE), hasMore: data.length > PAGE_SIZE };
+  }
+
+  function appendRows(rows) {
+    for (const status of rows) {
+      feed.append(
+        createStatusRow({
+          username: profile.username,
+          displayName: profile.display_name,
+          content: status.content,
+          createdAt: status.created_at,
+        })
+      );
+    }
+
+    oldestShown = rows[rows.length - 1].created_at;
+  }
+
+  const [firstPage, { count, error: countError }] = await Promise.all([
+    fetchPage(),
+    supabase
+      .from('statuses')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', profile.user_id)
+      .eq('visibility', 'public'),
+  ]);
 
   if (countError) {
     console.error(countError);
@@ -397,27 +435,44 @@ async function renderUserPage(username) {
   feed.removeAttribute('aria-busy');
   feed.replaceChildren();
 
-  if (statusesError) {
-    console.error(statusesError);
+  if (firstPage.error) {
+    console.error(firstPage.error);
     feed.append(createFeedMessage("Couldn't load statuses."));
     return;
   }
 
-  if (statuses.length === 0) {
+  if (firstPage.rows.length === 0) {
     feed.append(createFeedMessage(`${profile.display_name} hasn't posted yet.`));
     return;
   }
 
-  for (const status of statuses) {
-    feed.append(
-      createStatusRow({
-        username: profile.username,
-        displayName: profile.display_name,
-        content: status.content,
-        createdAt: status.created_at,
-      })
-    );
-  }
+  appendRows(firstPage.rows);
+  feedMore.hidden = !firstPage.hasMore;
+
+  showOlderButton.addEventListener('click', async () => {
+    if (showOlderButton.disabled) return;
+
+    showOlderButton.disabled = true;
+    showOlderButton.setAttribute('aria-busy', 'true');
+    showOlderButton.textContent = 'Loading…';
+
+    const page = await fetchPage();
+
+    showOlderButton.disabled = false;
+    showOlderButton.removeAttribute('aria-busy');
+
+    if (page.error) {
+      console.error(page.error);
+      showOlderButton.textContent = "Couldn't load older statuses. Try again";
+      return;
+    }
+
+    showOlderButton.textContent = 'Show older';
+
+    if (page.rows.length > 0) appendRows(page.rows);
+
+    feedMore.hidden = !page.hasMore;
+  });
 }
 
 // The sidebar is the same on the home page and on profile pages: the signed-in

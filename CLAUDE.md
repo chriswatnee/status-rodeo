@@ -204,8 +204,11 @@ Profile page: the header card shows the avatar, display name and one muted line,
 "@username · Joined Sep 2026 · 14 statuses" (the joined month comes from
 `profiles.created_at`; the count is a second, head-only query, and is left out
 if it fails). The tab title is "Display name (@username) · Status Rodeo". The
-feed shows that user's latest 5 public statuses, or "Name hasn't posted yet.",
-or "Couldn't load statuses." if the query fails. The line stays on one row so the
+feed shows that user's latest 5 public statuses, with a "Show older" button
+that loads the next 5 (the page asks for 6 to know if there are more, and pages
+by `created_at` below the oldest status shown, not by offset), or "Name hasn't
+posted yet.", or "Couldn't load statuses." if the query fails. The home page
+still shows only the latest 5 across everyone. The line stays on one row so the
 card is only as tall as the avatar and lines up with the sidebar. An unknown
 username shows "Page not found".
 
