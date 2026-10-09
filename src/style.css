@@ -402,6 +402,16 @@ textarea:focus-visible {
   cursor: progress;
 }
 
+.login button,
+.composer button {
+  transition: transform 0.12s ease-out;
+}
+
+.login button:active:not(:disabled),
+.composer button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
 .login button:active,
 .composer button:active {
   background: linear-gradient(var(--button-active-top), var(--button-active-bottom));
@@ -592,6 +602,17 @@ textarea:focus-visible {
   }
 }
 
+/* Rows shown again after the sort order changes. */
+.status-fade {
+  animation: status-fade 0.3s ease-out both;
+}
+
+@keyframes status-fade {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes pulse-text {
   50% {
     opacity: 0.45;
@@ -600,15 +621,20 @@ textarea:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .status-enter,
+  .status-fade,
   .feed-more button[aria-busy='true'] {
     animation: none;
   }
 
-  .feed-more button {
+  .feed-more button,
+  .login button,
+  .composer button {
     transition: none;
   }
 
-  .feed-more button:active:not(:disabled) {
+  .feed-more button:active:not(:disabled),
+  .login button:active:not(:disabled),
+  .composer button:active:not(:disabled) {
     transform: none;
   }
 }

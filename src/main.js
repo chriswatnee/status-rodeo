@@ -299,7 +299,7 @@ function renderHome() {
   // A new status belongs at the top of "Latest first", so posting switches back
   // to that order.
   function loadStatus() {
-    return pager.load({ ascending: false });
+    return pager.load({ ascending: false, motion: 'pop' });
   }
 
   postButton.addEventListener('click', postStatus);
@@ -448,15 +448,18 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     return { rows: data.slice(0, PAGE_SIZE), hasMore: data.length > PAGE_SIZE };
   }
 
-  // Rows loaded by "Show older / newer" spring in one after another. The first
-  // page appears without animation.
-  function appendRows(rows, animate = false) {
+  // How rows appear: nothing for a plain load, "spring" (one after another) for
+  // "Show older / newer", "pop" (the first row only) for a status you just
+  // posted, "fade" (all rows together) after the order changes.
+  function appendRows(rows, motion = null) {
     rows.forEach((status, index) => {
       const row = createStatusRow(toRow(status));
 
-      if (animate) {
+      if (motion === 'spring' || (motion === 'pop' && index === 0)) {
         row.classList.add('status-enter');
-        row.style.setProperty('--i', index);
+        row.style.setProperty('--i', motion === 'spring' ? index : 0);
+      } else if (motion === 'fade') {
+        row.classList.add('status-fade');
       }
 
       feed.append(row);
@@ -502,12 +505,12 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
       return;
     }
 
-    appendRows(page.rows);
+    appendRows(page.rows, options.motion);
     more.hidden = !page.hasMore;
   }
 
   sortSelect.addEventListener('change', () => {
-    load({ ascending: sortSelect.value === 'asc' });
+    load({ ascending: sortSelect.value === 'asc', motion: 'fade' });
   });
 
   button.addEventListener('click', async () => {
@@ -534,7 +537,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
 
     button.textContent = moreLabel();
 
-    if (page.rows.length > 0) appendRows(page.rows, true);
+    if (page.rows.length > 0) appendRows(page.rows, 'spring');
 
     more.hidden = !page.hasMore;
   });
