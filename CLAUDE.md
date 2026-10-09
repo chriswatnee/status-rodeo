@@ -265,7 +265,11 @@ and slides in (`.page-enter`, 0.3s); the first load is not animated. Buttons pre
 while loading. A pressed button's tappable area shrinks with it, so each of those
 buttons has an invisible `::after` layer (`inset: -3%`) that keeps the full area
 tappable; without it a press near the edge of the wide "Show older" button only
-gave it focus and lost the click. Keep that layer if you change the press effect. Keep motion short and subtle, and turn it off under
+gave it focus and lost the click. Keep that layer if you change the press effect. Hover styles are
+wrapped in `@media (hover: hover)` so phones never get them (an animated hover style
+can make iOS treat the first tap as "just hovering" and skip the click), and links,
+buttons and selects have `touch-action: manipulation`. Put new `:hover` rules inside
+that media query. Keep motion short and subtle, and turn it off under
 `prefers-reduced-motion`.
 
 Profile page: the header card shows the avatar, display name and one muted line,
