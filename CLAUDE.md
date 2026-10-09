@@ -223,7 +223,9 @@ helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
 link, never rebuilt, so the image doesn't reload). Under 640px a `<picture>` source swaps in
 `public/masthead-mobile.webp` (1536x768, 2:1, quality-90 WebP): a tighter crop of
 the same artwork (cowboy, horse, dog and the sign, from x 614 to 2150 of the
-3072px original) so the sign stays readable, and the placeholder becomes 2:1.
+3072px original) so the sign stays readable, and the placeholder becomes 2:1. At 360px and under (very small phones)
+the side padding, the composer's avatar column and a few font sizes tighten so the
+composer placeholder fits on one line and the "Latest first" dropdown isn't clipped.
 
 Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.9rem, between panels in both directions and under the masthead), `--inset`
