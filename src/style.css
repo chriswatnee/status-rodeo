@@ -917,6 +917,16 @@ textarea:focus-visible {
 }
 
 @media (max-width: 639px) {
+  /* On phones the composer's avatar is left out: it is already in the sidebar bar
+     just above, and the box gets the full width. */
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+  #composer-avatar {
+    display: none;
+  }
+
   .profile {
     gap: 0.75rem;
   }
@@ -1026,11 +1036,6 @@ textarea:focus-visible {
 @media (max-width: 360px) {
   :root {
     --inset: 1rem;
-  }
-
-  .composer {
-    --avatar: 2.75rem;
-    gap: 0.7rem;
   }
 
   .composer textarea {

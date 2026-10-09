@@ -279,7 +279,8 @@ unknown username shows "Page not found", and so does any unknown path: a panel
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with
 the live `0/280` counter at the left and the Post button at the right, and any
-error message under it. The counter is in the existing muted colour. It turns rust and bold with 20 or fewer characters left, and a
+error message under it. The counter is in the existing muted colour. Under 640px the composer's avatar is hidden (it is
+already in the sidebar bar just above) and the box takes the full width. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty
 or over-limit statuses are not sent, and a failed post keeps the text and shows a
