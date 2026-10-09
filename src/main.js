@@ -448,8 +448,19 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     return { rows: data.slice(0, PAGE_SIZE), hasMore: data.length > PAGE_SIZE };
   }
 
-  function appendRows(rows) {
-    for (const status of rows) feed.append(createStatusRow(toRow(status)));
+  // Rows loaded by "Show older / newer" spring in one after another. The first
+  // page appears without animation.
+  function appendRows(rows, animate = false) {
+    rows.forEach((status, index) => {
+      const row = createStatusRow(toRow(status));
+
+      if (animate) {
+        row.classList.add('status-enter');
+        row.style.setProperty('--i', index);
+      }
+
+      feed.append(row);
+    });
 
     cursor = rows[rows.length - 1].created_at;
   }
@@ -523,7 +534,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
 
     button.textContent = moreLabel();
 
-    if (page.rows.length > 0) appendRows(page.rows);
+    if (page.rows.length > 0) appendRows(page.rows, true);
 
     more.hidden = !page.hasMore;
   });
