@@ -231,7 +231,8 @@ status is visible. The order is not remembered between visits. Motion: rows
 added by "Show older / newer" spring up one after another (`.status-enter`, 0.45s,
 70ms stagger), a status you just posted pops in at the top, and all rows fade in
 (`.status-fade`, 0.3s) after the sort order changes. The first page load is not
-animated. Buttons press down (scale 0.96) when clicked, and "Show older" pulses
+animated. After a navigation the page area (not the masthead or sidebar) fades
+and slides in (`.page-enter`, 0.3s); the first load is not animated. Buttons press down (scale 0.96) when clicked, and "Show older" pulses
 while loading. Keep motion short and subtle, and turn it off under
 `prefers-reduced-motion`.
 

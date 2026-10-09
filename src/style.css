@@ -608,6 +608,18 @@ textarea:focus-visible {
   }
 }
 
+/* The page area after a navigation. */
+.page-enter {
+  animation: page-enter 0.3s ease-out;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+}
+
 /* Rows shown again after the sort order changes. */
 .status-fade {
   animation: status-fade 0.3s ease-out both;
@@ -628,6 +640,7 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .status-enter,
   .status-fade,
+  .page-enter,
   .feed-more button[aria-busy='true'] {
     animation: none;
   }
