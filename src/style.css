@@ -58,6 +58,22 @@
   }
 }
 
+/*
+  Browser consistency. There is no full reset here, only the parts that differ
+  between browsers: one box model everywhere, no automatic text inflation on
+  iPhones, and no default margins on form controls (Firefox and Safari add them).
+*/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
 }
@@ -73,6 +89,7 @@ a {
 button,
 input,
 textarea {
+  margin: 0;
   font: inherit;
 }
 
@@ -159,7 +176,6 @@ textarea:focus-visible {
   display: grid;
   place-items: center;
   flex: none;
-  box-sizing: border-box;
   width: var(--avatar);
   height: var(--avatar);
   overflow: hidden;
@@ -315,7 +331,6 @@ textarea:focus-visible {
 }
 
 .login input {
-  box-sizing: border-box;
   width: 100%;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);
@@ -405,7 +420,6 @@ textarea:focus-visible {
 }
 
 .composer textarea {
-  box-sizing: border-box;
   width: 100%;
   min-height: 3.3rem;
   padding: 0.7rem 0.9rem;
