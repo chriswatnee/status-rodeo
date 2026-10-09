@@ -7,17 +7,9 @@
 }
 
 @font-face {
-  font-family: 'Poppins';
-  src: url('/fonts/poppins-Regular.woff') format('woff');
-  font-weight: 400 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Poppins';
-  src: url('/fonts/poppins-Bold.woff') format('woff');
-  font-weight: 700;
+  font-family: 'Nunito';
+  src: url('/fonts/nunito-variable.woff') format('woff');
+  font-weight: 400 800;
   font-style: normal;
   font-display: swap;
 }
@@ -58,8 +50,8 @@
 
   /* Self-hosted Zilla Slab Bold (public/fonts), Georgia as the fallback. */
   --font-display: 'Zilla Slab', Georgia, 'Times New Roman', serif;
-  /* Self-hosted Poppins (public/fonts, Latin subset, Regular and Bold) for body text. */
-  --font-body: 'Poppins', system-ui, sans-serif;
+  /* Self-hosted Nunito (public/fonts, Latin subset, weights 400-800) for body text. */
+  --font-body: 'Nunito', system-ui, sans-serif;
 
   --avatar: 4rem;
 
