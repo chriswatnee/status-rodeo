@@ -528,13 +528,19 @@ textarea:focus-visible {
 
 .sort-select {
   min-width: 0;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--divider);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  font-size: 0.95rem;
+  padding: 0.3rem 1.4rem 0.3rem 0.25rem;
+  border: 0;
+  border-radius: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5z' fill='%230759bd'/%3E%3C/svg%3E") no-repeat right 0.3rem center / 0.8rem 0.55rem;
+  color: var(--link);
+  font-size: 1.15rem;
   cursor: pointer;
+}
+
+.sort-select:hover {
+  text-decoration: underline;
 }
 
 .feed:empty {
@@ -662,5 +668,20 @@ textarea:focus-visible {
   .site-nav {
     display: grid;
     gap: 0.15rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .panel-heading {
+    gap: 0.4rem;
+  }
+
+  .panel-heading h2 {
+    font-size: 1.45rem;
+  }
+
+  .sort-select {
+    padding-right: 1.2rem;
+    font-size: 1rem;
   }
 }
