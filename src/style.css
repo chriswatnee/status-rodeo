@@ -42,6 +42,7 @@
   --avatar-bg: #ecd3ab;
   --avatar-border: #3a2414;
   --warn: #a2391a;
+  --warn-tint: #f8e1d6;
 
   --radius: 0.6rem;
   --radius-small: 0.4rem;
@@ -371,34 +372,18 @@ textarea:focus-visible {
 /* Icons beside button labels take the button's text colour; the error icon
    takes the warning colour and sits in front of its message. */
 .login button,
-.composer button,
-#sign-out-button,
-.profile-error button,
-.feed-message button {
+.composer button {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .login button .icon,
-.composer button .icon,
-#sign-out-button .icon,
-.profile-error button .icon,
-.feed-message button .icon {
+.composer button .icon {
+  width: 1.1rem;
+  height: 1.1rem;
   color: inherit;
-}
-
-#sign-out-button,
-.profile-error button,
-.feed-message button {
-  gap: 0.3rem;
-}
-
-#sign-out-button .icon,
-.profile-error button .icon,
-.feed-message button .icon {
-  width: 1em;
-  height: 1em;
 }
 
 .icon-error {
@@ -457,21 +442,46 @@ textarea:focus-visible {
   display: none;
 }
 
+/* Sign out is styled like the nav items, under a small "Signed in" label. */
+.auth-info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+#auth-separator {
+  display: none;
+}
+
 #sign-out-button {
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
   border: 0;
+  border-radius: var(--radius-small);
   background: none;
-  color: var(--link);
-  text-decoration: underline;
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1.3;
+  text-align: left;
   cursor: pointer;
 }
+
+#sign-out-button:hover {
+  background: var(--band);
+}
+
+#sign-out-button[hidden] {
+  display: none;
+}
+
 
 /* Buttons */
 
 .login button,
 .composer button {
   /* The 2px border is taken out of the padding, so the size is unchanged. */
-  padding: calc(0.5rem - 2px) calc(1.6rem - 2px);
+  padding: calc(0.5rem - 2px) calc(1.2rem - 2px);
   border: 2px solid var(--button-edge);
   border-radius: var(--radius-button);
   background: linear-gradient(var(--button-top), var(--button-bottom));
@@ -781,6 +791,19 @@ textarea:focus-visible {
   color: var(--muted);
 }
 
+/* Failure messages (they start with the error icon) get a soft warning tint. */
+.feed-message:has(.icon-error),
+.profile-error {
+  background: var(--warn-tint);
+  color: var(--text);
+}
+
+.profile-error {
+  margin-bottom: 0.8rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-small);
+}
+
 .status,
 .status-skeleton {
   display: grid;
@@ -938,8 +961,22 @@ textarea:focus-visible {
     margin: 0;
     padding: 0;
     border-top: 0;
-    font-size: 0.85rem;
-    text-align: right;
+    justify-items: end;
+  }
+
+  /* Read out, not shown: the identity beside it already says who is signed in. */
+  #auth-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  #sign-out-button {
+    padding: 0.3rem 0.65rem;
+    font-size: 1rem;
   }
 
   .site-nav {

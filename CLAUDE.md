@@ -177,11 +177,14 @@ redirect URLs are configured.
   (`<span class="icon" aria-hidden="true">`), for use beside text that already
   names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
   used only beside labels of things that already work: the nav items (home,
-  profile), Post (pencil), Sign in, Sign out, the "Try again" buttons (refresh) and
-  failure messages (error, via `setErrorNote()` and the `icon-error` class, which
-  uses the warning colour). Icons inside buttons take the button's text colour.
-  Don't add links, features or per-status icons (like, reply, share, menu) just
-  because an icon exists. The `pencil` icon serves both new status
+  profile), Post (pencil), Sign in, Sign out and failure messages (error, via
+  `setErrorNote()` and the `icon-error` class, which uses the warning colour).
+  "Try again" is a plain link without an icon. Icons inside buttons take the
+  button's text colour. Don't add links, features or per-status icons (like,
+  reply, share, menu) just because an icon exists. Sign out is styled like a nav
+  item (under a small "Signed in" label; on phones only the button shows and the
+  label is read out, not displayed), and failure messages get a soft tint
+  (`--warn-tint`). Post and Sign in use 1.2rem side padding. The `pencil` icon serves both new status
   and edit status.
 - A "Skip to content" link is the first focusable element (`.skip-link`, built by
   `mount()`). It is off-screen until focused; its click is handled in the
