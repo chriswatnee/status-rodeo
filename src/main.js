@@ -94,7 +94,7 @@ function renderHome() {
 
           <section class="feed-panel">
             <div class="panel-heading">
-              <h2>Recent Statuses</h2>
+              <h2 class="panel-title">Recent Statuses</h2>
               ${sortSelectMarkup()}
             </div>
             <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
@@ -278,6 +278,7 @@ function renderHome() {
     feed,
     more: document.querySelector('.feed-more'),
     sortSelect: document.querySelector('.sort-select'),
+    title: document.querySelector('.panel-title'),
     select: `
       *,
       profiles (
@@ -327,7 +328,7 @@ async function renderUserPage(username) {
 
           <section class="feed-panel">
             <div class="panel-heading">
-              <h2>Recent Statuses</h2>
+              <h2 class="panel-title">Recent Statuses</h2>
               ${sortSelectMarkup()}
             </div>
             <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
@@ -379,6 +380,7 @@ async function renderUserPage(username) {
     feed,
     more: feedMore,
     sortSelect: document.querySelector('.sort-select'),
+    title: document.querySelector('.panel-title'),
     select: 'content, created_at',
     filter: (query) => query.eq('user_id', profile.user_id),
     toRow: (status) => ({
@@ -421,7 +423,7 @@ function sortSelectMarkup() {
 // past the last status shown (compared on created_at exactly as the database
 // returned it), so a status posted meanwhile can't shift or repeat rows. Results
 // that arrive after the order was changed are dropped.
-function createFeedPager({ feed, more, sortSelect, select, filter = (query) => query, toRow, emptyMessage }) {
+function createFeedPager({ feed, more, sortSelect, title, select, filter = (query) => query, toRow, emptyMessage }) {
   const PAGE_SIZE = 5;
   const button = more.querySelector('button');
   let ascending = false;
@@ -459,6 +461,7 @@ function createFeedPager({ feed, more, sortSelect, select, filter = (query) => q
     if (options.ascending !== undefined) ascending = options.ascending;
 
     sortSelect.value = ascending ? 'asc' : 'desc';
+    title.textContent = ascending ? 'Oldest Statuses' : 'Recent Statuses';
     cursor = null;
     const mine = ++generation;
 
