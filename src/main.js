@@ -51,6 +51,33 @@ document.addEventListener(
   true,
 );
 
+// Runs a Supabase query again (after 1 s, then 3 s) if it fails, because a single
+// dropped request would otherwise leave part of the page empty until a refresh.
+// `shouldStop()` ends the retries early, for example after signing out. Returns
+// the last result, which still carries the error if every attempt failed.
+const LOAD_RETRY_DELAYS = [1000, 3000];
+
+async function withRetry(run, shouldStop = () => false) {
+  let result;
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      result = await run();
+    } catch (error) {
+      result = { data: null, error };
+    }
+
+    if (!result.error || attempt >= LOAD_RETRY_DELAYS.length || shouldStop()) {
+      return result;
+    }
+
+    console.warn(`Load failed (attempt ${attempt + 1}), retrying`, result.error);
+    await new Promise((resolve) => setTimeout(resolve, LOAD_RETRY_DELAYS[attempt]));
+
+    if (shouldStop()) return result;
+  }
+}
+
 const app = document.querySelector('#app');
 
 // Pages are drawn inside a shared frame (masthead and sidebar) that is built once,
@@ -590,7 +617,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
       query = ascending ? query.gt('created_at', cursor) : query.lt('created_at', cursor);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withRetry(() => query);
 
     if (error) return { error };
 
@@ -645,7 +672,14 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
 
     if (page.error) {
       console.error(page.error);
-      feed.append(createFeedMessage("Couldn't load statuses."));
+
+      const message = createFeedMessage("Couldn't load statuses.");
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = 'Try again';
+      retry.addEventListener('click', () => load());
+      message.append(' ', retry);
+      feed.append(message);
       return;
     }
 
@@ -708,6 +742,11 @@ function sidebarMarkup() {
             </div>
           </section>
 
+          <p id="profile-error" class="profile-error" role="status" hidden>
+            Couldn't load your profile.
+            <button type="button">Try again</button>
+          </p>
+
           <section id="login" class="login" hidden>
             <label for="email-input">Email</label>
             <input id="email-input" type="email" />
@@ -746,6 +785,7 @@ function initSidebar() {
   const sidebarUsername = document.querySelector('#sidebar-username');
   const viewProfileLink = document.querySelector('#view-profile-link');
   const profileLink = document.querySelector('#profile-link');
+  const profileErrorNote = document.querySelector('#profile-error');
 
   const loginSection = document.querySelector('#login');
   const signOutButton = document.querySelector('#sign-out-button');
@@ -756,24 +796,31 @@ function initSidebar() {
   const signInButton = document.querySelector('.login button');
 
   async function loadProfile(userId) {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('username, display_name')
-      .eq('user_id', userId)
-      .single();
+    profileErrorNote.hidden = true;
+
+    // Compared with the current session rather than asking Supabase again, which
+    // could briefly answer "no session" and silently drop the profile.
+    const signedOutMeanwhile = () => currentSession?.user.id !== userId;
+
+    const { data: profile, error } = await withRetry(
+      () =>
+        supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('user_id', userId)
+          .single(),
+      signedOutMeanwhile
+    );
+
+    // Avoid displaying a profile if the user signed out
+    // while the request was running.
+    if (signedOutMeanwhile()) return;
 
     if (error) {
       console.error(error);
       currentProfile = null;
+      profileErrorNote.hidden = false;
       pageHooks.onProfile?.(null);
-      return;
-    }
-
-    // Avoid displaying a profile if the user signed out
-    // while the request was running.
-    const { data: sessionData } = await supabase.auth.getSession();
-
-    if (sessionData.session?.user.id !== userId) {
       return;
     }
 
@@ -815,6 +862,7 @@ function initSidebar() {
       authStatus.textContent = '';
 
       sidebarProfile.hidden = true;
+      profileErrorNote.hidden = true;
       profileLink.hidden = true;
       updateNav();
 
@@ -864,6 +912,10 @@ function initSidebar() {
 
     updateAuthUI(data.session);
   }
+
+  profileErrorNote.querySelector('button').addEventListener('click', () => {
+    if (currentSession) loadProfile(currentSession.user.id);
+  });
 
   signInButton.addEventListener('click', signIn);
   signOutButton.addEventListener('click', signOut);
