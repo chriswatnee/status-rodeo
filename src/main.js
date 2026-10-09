@@ -52,27 +52,137 @@ document.addEventListener(
 );
 
 const app = document.querySelector('#app');
-const pathParts = window.location.pathname
-  .split('/')
-  .filter(Boolean);
 
-if (pathParts.length === 0) {
-  renderHome();
-} else if (pathParts.length === 2 && pathParts[0] === 'users') {
-  renderUserPage(pathParts[1]);
-} else {
-  renderNotFound();
+// Pages are drawn inside a shared frame (masthead and sidebar) that is built once,
+// so moving between pages replaces only the content beside the sidebar and the
+// masthead, sign-in state and avatars stay put. `route()` is called at the end
+// of this file, once everything it uses exists.
+let frame = null;
+let navigation = 0;
+let pageHooks = {};
+let authKnown = false;
+let currentSession = null;
+// undefined until the signed-in user's profile loads; null if it failed.
+let currentProfile;
+
+function route() {
+  const id = ++navigation;
+  const isCurrent = () => id === navigation;
+  const parts = window.location.pathname.split('/').filter(Boolean);
+
+  if (parts.length === 0) {
+    renderHome();
+  } else if (parts.length === 2 && parts[0] === 'users') {
+    renderUserPage(parts[1], isCurrent);
+  } else {
+    renderNotFound();
+  }
+
+  updateNav();
+}
+
+function navigate(path) {
+  if (path !== window.location.pathname + window.location.search) {
+    window.history.pushState({}, '', path);
+    route();
+  }
+
+  window.scrollTo(0, 0);
+}
+
+// Links to pages of this app load without reloading the browser page. Anything
+// else (other sites, new tabs, modified clicks, plain "#" links) behaves normally.
+document.addEventListener('click', (event) => {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+
+  const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+
+  if (!link || link.target || link.hasAttribute('download')) return;
+  if (link.getAttribute('href').startsWith('#')) return;
+
+  const url = new URL(link.href, window.location.href);
+  const parts = url.pathname.split('/').filter(Boolean);
+  const isAppPage = parts.length === 0 || (parts.length === 2 && parts[0] === 'users');
+
+  if (url.origin !== window.location.origin || !isAppPage) return;
+
+  event.preventDefault();
+  navigate(url.pathname + url.search);
+});
+
+window.addEventListener('popstate', route);
+
+// Builds the frame on first use, then swaps the page content. `linkHome` is
+// whether the masthead links to the home page (everywhere except home).
+function mount(markup, { linkHome }) {
+  if (!frame) {
+    app.innerHTML = `
+      ${masthead()}
+      <main class="site">
+        <div class="app-layout">
+          ${sidebarMarkup()}
+          <div class="main-content" id="page"></div>
+        </div>
+      </main>
+    `;
+    frame = { page: app.querySelector('#page') };
+    initSidebar();
+  }
+
+  setMastheadLink(linkHome);
+  pageHooks = {};
+  frame.page.innerHTML = markup;
+}
+
+// The home page and the profile page differ in what they do when the signed-in
+// state is known. The hooks run now if it already is (the sidebar has been there
+// since an earlier page), and again when it changes.
+function setPageHooks(hooks) {
+  pageHooks = hooks;
+
+  if (!authKnown) return;
+
+  hooks.onSession?.(currentSession);
+
+  if (currentSession && currentProfile !== undefined) {
+    hooks.onProfile?.(currentProfile);
+  }
+}
+
+// Marks the current page in the navigation: "Home" on the home page, and
+// "My profile" on your own profile.
+function updateNav() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  const homeLink = document.querySelector('.site-nav a[href="/"]');
+  const profileLink = document.querySelector('#profile-link');
+
+  if (!homeLink || !profileLink) return;
+
+  if (parts.length === 0) {
+    homeLink.setAttribute('aria-current', 'page');
+  } else {
+    homeLink.removeAttribute('aria-current');
+  }
+
+  if (currentProfile && parts.length === 2 && parts[0] === 'users' && parts[1] === currentProfile.username) {
+    profileLink.setAttribute('aria-current', 'page');
+  } else {
+    profileLink.removeAttribute('aria-current');
+  }
 }
 
 function renderHome() {
-  app.innerHTML = `
-    ${masthead(false)}
-    <main class="site">
-
-      <div class="app-layout">
-        ${sidebarMarkup('home')}
-
-        <div class="main-content">
+  document.title = 'Status Rodeo';
+  mount(`
           <section class="composer" hidden>
             <span id="composer-avatar"></span>
             <div class="composer-fields">
@@ -103,10 +213,7 @@ function renderHome() {
               <button type="button">Show older</button>
             </div>
           </section>
-        </div>
-      </div>
-    </main>
-  `;
+  `, { linkHome: false });
 
   const composer = document.querySelector('.composer');
   const composerAvatar = document.querySelector('#composer-avatar');
@@ -119,7 +226,7 @@ function renderHome() {
 
   // The sidebar is shared with the profile page. The home page only adds what
   // belongs to the composer: it is shown when signed in and shows the user's avatar.
-  initSidebar({
+  setPageHooks({
     onSession(session) {
       composer.hidden = !session;
 
@@ -307,15 +414,8 @@ function renderHome() {
   pager.load();
 }
 
-async function renderUserPage(username) {
-  app.innerHTML = `
-    ${masthead(true)}
-    <main class="site">
-
-      <div class="app-layout">
-        ${sidebarMarkup()}
-
-        <div class="main-content">
+async function renderUserPage(username, isCurrent) {
+  mount(`
           <section class="profile">
             <span id="profile-avatar"><span class="avatar" data-state="loading"></span></span>
             <div>
@@ -337,12 +437,7 @@ async function renderUserPage(username) {
               <button type="button">Show older</button>
             </div>
           </section>
-        </div>
-      </div>
-    </main>
-  `;
-
-  initSidebar({ currentUsername: username });
+  `, { linkHome: true });
 
   const profileAvatar = document.querySelector('#profile-avatar');
   const profileName = document.querySelector('#profile-name');
@@ -356,6 +451,9 @@ async function renderUserPage(username) {
     .select('user_id, username, display_name, created_at')
     .eq('username', username)
     .single();
+
+  // The visitor may have moved to another page while this was loading.
+  if (!isCurrent()) return;
 
   if (profileError) {
     console.error(profileError);
@@ -547,7 +645,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
 
 // The sidebar is the same on the home page and on profile pages: the signed-in
 // user's identity or the sign-in form, the navigation, and Sign out.
-function sidebarMarkup(current) {
+function sidebarMarkup() {
   return `
         <aside class="sidebar">
           <section id="sidebar-profile" class="sidebar-profile" hidden>
@@ -570,7 +668,7 @@ function sidebarMarkup(current) {
           </section>
 
           <nav class="site-nav">
-            <a href="/"${current === 'home' ? ' aria-current="page"' : ''}>Home</a>
+            <a href="/">Home</a>
             <a id="profile-link" href="#" hidden>My profile</a>
           </nav>
 
@@ -585,11 +683,12 @@ function sidebarMarkup(current) {
   `;
 }
 
-// Wires up the sidebar. `onSession(session)` runs whenever the signed-in state
-// is known or changes, and `onProfile(profile)` when the signed-in user's profile
-// has loaded (or failed to, with null). `currentUsername` is the profile being
-// viewed, so "My profile" is marked as the current page on your own profile.
-function initSidebar({ onSession, onProfile, currentUsername } = {}) {
+// Wires up the sidebar, once, when the frame is built. The current page's hooks
+// (`pageHooks.onSession(session)` whenever the signed-in state is known or
+// changes, and `onProfile(profile)` when the signed-in user's profile has loaded,
+// or failed to, with null) are set with `setPageHooks()`. `updateNav()` marks the
+// current page in the navigation.
+function initSidebar() {
   const sidebarProfile = document.querySelector('#sidebar-profile');
   const sidebarAvatar = document.querySelector('#sidebar-avatar');
   const sidebarDisplayName = document.querySelector('#sidebar-display-name');
@@ -614,7 +713,8 @@ function initSidebar({ onSession, onProfile, currentUsername } = {}) {
 
     if (error) {
       console.error(error);
-      onProfile?.(null);
+      currentProfile = null;
+      pageHooks.onProfile?.(null);
       return;
     }
 
@@ -635,18 +735,20 @@ function initSidebar({ onSession, onProfile, currentUsername } = {}) {
     viewProfileLink.href = `/users/${profile.username}`;
     profileLink.href = `/users/${profile.username}`;
 
-    if (currentUsername === profile.username) {
-      profileLink.setAttribute('aria-current', 'page');
-    }
-
     sidebarProfile.hidden = false;
     profileLink.hidden = false;
 
-    onProfile?.(profile);
+    currentProfile = profile;
+    updateNav();
+    pageHooks.onProfile?.(profile);
   }
 
   function updateAuthUI(session) {
-    onSession?.(session);
+    authKnown = true;
+    currentSession = session;
+    if (!session) currentProfile = undefined;
+
+    pageHooks.onSession?.(session);
 
     if (session) {
       loginSection.hidden = true;
@@ -663,7 +765,7 @@ function initSidebar({ onSession, onProfile, currentUsername } = {}) {
 
       sidebarProfile.hidden = true;
       profileLink.hidden = true;
-      profileLink.removeAttribute('aria-current');
+      updateNav();
 
       sidebarDisplayName.textContent = '';
       sidebarUsername.textContent = '';
@@ -720,14 +822,10 @@ function initSidebar({ onSession, onProfile, currentUsername } = {}) {
 
 function renderNotFound() {
   document.title = 'Page not found · Status Rodeo';
-  app.innerHTML = `
-    ${masthead(true)}
-    <main class="site">
-
-      <h2>Page not found</h2>
-      <p><a href="/">Back to Status Rodeo</a></p>
-    </main>
-  `;
+  mount(`
+    <h2>Page not found</h2>
+    <p><a href="/">Back to Status Rodeo</a></p>
+  `, { linkHome: true });
 }
 
 // A user's avatar, expected at /avatars/<username>.webp. While the file loads the
@@ -854,10 +952,13 @@ setInterval(refreshTimes, 60 * 1000);
 // The illustrated masthead is its own image asset (public/masthead.webp, with a
 // tighter phone crop in public/masthead-mobile.webp). The words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
 // It links home everywhere except the home page itself.
-function masthead(linkHome) {
+function masthead() {
   // Phones get a tighter crop (cowboy, horse, dog and sign) so the sign stays
   // readable. Desktop uses the full-width image.
-  const image = `<picture>
+  return `
+    <header class="masthead">
+      <h1 class="visually-hidden">Status Rodeo</h1>
+      <picture>
         <source
           media="(max-width: 639px)"
           srcset="/masthead-mobile.webp"
@@ -872,12 +973,27 @@ function masthead(linkHome) {
           alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
           fetchpriority="high"
         />
-      </picture>`;
-
-  return `
-    <header class="masthead">
-      <h1 class="visually-hidden">Status Rodeo</h1>
-      ${linkHome ? `<a href="/">${image}</a>` : image}
+      </picture>
     </header>
   `;
 }
+
+// Wraps the masthead picture in a link home, or unwraps it. The picture itself
+// is moved, not rebuilt, so the image doesn't reload between pages.
+function setMastheadLink(linkHome) {
+  const header = document.querySelector('.masthead');
+  const picture = header.querySelector('picture');
+  const link = header.querySelector('a');
+
+  if (linkHome && !link) {
+    const anchor = document.createElement('a');
+    anchor.href = '/';
+    header.append(anchor);
+    anchor.append(picture);
+  } else if (!linkHome && link) {
+    header.append(picture);
+    link.remove();
+  }
+}
+
+route();
