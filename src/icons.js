@@ -3,15 +3,22 @@
 // an entry when an icon is first used.
 import home from './icons/home.svg?raw';
 import profile from './icons/profile.svg?raw';
+import pencil from './icons/pencil.svg?raw';
+import signIn from './icons/sign-in.svg?raw';
+import signOut from './icons/sign-out.svg?raw';
+import refresh from './icons/refresh.svg?raw';
+import error from './icons/error.svg?raw';
 
-const icons = { home, profile };
+const icons = { home, profile, pencil, 'sign-in': signIn, 'sign-out': signOut, refresh, error };
 
 // Decorative icon markup for use next to text that already names the action. The
 // SVG files are static, so inserting them as markup is safe.
-export function iconMarkup(name) {
+export function iconMarkup(name, extraClass = '') {
   const svg = icons[name];
 
   if (!svg) throw new Error(`Unknown icon: ${name}`);
 
-  return `<span class="icon" aria-hidden="true">${svg.trim()}</span>`;
+  const className = extraClass ? `icon ${extraClass}` : 'icon';
+
+  return `<span class="${className}" aria-hidden="true">${svg.trim()}</span>`;
 }

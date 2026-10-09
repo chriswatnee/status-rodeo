@@ -274,7 +274,7 @@ function renderHome() {
               <span id="char-help" class="visually-hidden">${STATUS_LIMIT} characters maximum.</span>
               <div class="composer-actions">
                 <span id="char-count" class="char-count" aria-hidden="true">0/${STATUS_LIMIT}</span>
-                <button type="button">Post</button>
+                <button type="button">${iconMarkup('pencil')}Post</button>
               </div>
               <p id="composer-note" class="composer-note" role="status"></p>
               <p id="char-announce" class="visually-hidden" role="status"></p>
@@ -409,7 +409,7 @@ function renderHome() {
     updateCounter();
   });
 
-  const postLabel = postButton.textContent;
+  const postLabel = postButton.innerHTML; // static markup: icon and text
 
   // While a post is in flight the button says so, keeps its width so nothing
   // beside it moves, and ignores further clicks.
@@ -421,7 +421,7 @@ function renderHome() {
       postButton.textContent = 'Posting…';
       postButton.setAttribute('aria-busy', 'true');
     } else {
-      postButton.textContent = postLabel;
+      postButton.innerHTML = postLabel;
       postButton.removeAttribute('aria-busy');
       postButton.style.width = '';
     }
@@ -447,7 +447,7 @@ function renderHome() {
           console.error(result.error);
         }
 
-        composerNote.textContent = postErrors[result.reason] ?? '';
+        setErrorNote(composerNote, postErrors[result.reason] ?? '');
         return;
       }
 
@@ -675,9 +675,10 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
       console.error(page.error);
 
       const message = createFeedMessage("Couldn't load statuses.");
+      setErrorNote(message, "Couldn't load statuses.");
       const retry = document.createElement('button');
       retry.type = 'button';
-      retry.textContent = 'Try again';
+      retry.innerHTML = `${iconMarkup('refresh')}Try again`; // static markup
       retry.addEventListener('click', () => load());
       message.append(' ', retry);
       feed.append(message);
@@ -744,8 +745,8 @@ function sidebarMarkup() {
           </section>
 
           <p id="profile-error" class="profile-error" role="status" hidden>
-            Couldn't load your profile.
-            <button type="button">Try again</button>
+            ${iconMarkup('error', 'icon-error')}Couldn't load your profile.
+            <button type="button">${iconMarkup('refresh')}Try again</button>
           </p>
 
           <section id="login" class="login" hidden>
@@ -755,7 +756,7 @@ function sidebarMarkup() {
             <label for="password-input">Password</label>
             <input id="password-input" type="password" />
 
-            <button type="button">Sign in</button>
+            <button type="button">${iconMarkup('sign-in')}Sign in</button>
           </section>
 
           <nav class="site-nav">
@@ -767,7 +768,7 @@ function sidebarMarkup() {
             <span id="auth-status"></span>
             <span id="auth-separator" hidden>·</span>
             <button id="sign-out-button" type="button" hidden>
-              Sign out
+              ${iconMarkup('sign-out')}Sign out
             </button>
           </div>
         </aside>
@@ -1002,6 +1003,15 @@ function feedPlaceholder() {
 }
 
 // A short line of text shown inside the feed panel instead of statuses.
+// Sets an error message with the decorative error icon in front of it. An empty
+// message clears the note (and the icon with it). The text goes in as text; only
+// the static icon markup is inserted as HTML.
+function setErrorNote(element, text) {
+  element.textContent = text;
+
+  if (text) element.insertAdjacentHTML('afterbegin', iconMarkup('error', 'icon-error'));
+}
+
 function createFeedMessage(text) {
   const message = document.createElement('p');
   message.className = 'feed-message';

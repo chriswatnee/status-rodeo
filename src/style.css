@@ -368,6 +368,47 @@ textarea:focus-visible {
   height: 100%;
 }
 
+/* Icons beside button labels take the button's text colour; the error icon
+   takes the warning colour and sits in front of its message. */
+.login button,
+.composer button,
+#sign-out-button,
+.profile-error button,
+.feed-message button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.login button .icon,
+.composer button .icon,
+#sign-out-button .icon,
+.profile-error button .icon,
+.feed-message button .icon {
+  color: inherit;
+}
+
+#sign-out-button,
+.profile-error button,
+.feed-message button {
+  gap: 0.3rem;
+}
+
+#sign-out-button .icon,
+.profile-error button .icon,
+.feed-message button .icon {
+  width: 1em;
+  height: 1em;
+}
+
+.icon-error {
+  width: 1.1em;
+  height: 1.1em;
+  margin-right: 0.35rem;
+  vertical-align: -0.2em;
+  color: var(--warn);
+}
+
 .site-nav a:hover {
   background: var(--band);
 }
