@@ -258,6 +258,15 @@ reloaded) the Post button reads "Posting…", keeps its width, is marked
 `aria-busy` and ignores further clicks; the text box is read-only until the
 insert finishes.
 
+Failed loads: the profile lookup behind the sidebar identity and the feed queries
+are retried twice (after 1 s, then 3 s, `withRetry()` in `src/main.js`, logged
+with `console.warn`). If every attempt fails, the sidebar shows "Couldn't load
+your profile. Try again" and the feed shows "Couldn't load statuses. Try again",
+each with a button that tries once more. The sidebar compares the profile
+result with the module's current session rather than calling `getSession()`
+again, which could answer "no session" for a moment and silently drop the
+identity. Signing out stops the retries.
+
 Loading states: the masthead reserves its 4:1 space with a plain colour. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
