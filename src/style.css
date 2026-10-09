@@ -832,3 +832,74 @@ textarea:focus-visible {
     font-size: 1rem;
   }
 }
+
+/*
+  Phone sidebar: a slim two-row bar instead of a tall card. Row one is the
+  identity (small avatar, name, @username) with "Signed in · Sign out" beside it;
+  row two is the navigation. "View profile" is left out here because "My profile"
+  in the navigation goes to the same page. Errors and the sign-in form take the
+  full first row.
+*/
+@media (max-width: 639px) {
+  .sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.6rem;
+    padding: 0.65rem 0.9rem;
+  }
+
+  .login,
+  .profile-error {
+    order: 0;
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .sidebar-profile {
+    order: 1;
+    grid-column: 1;
+    gap: 0.7rem;
+    margin: 0;
+  }
+
+  .sidebar-profile .avatar {
+    --avatar: 2.75rem;
+  }
+
+  .sidebar-identity strong {
+    font-size: 1.15rem;
+  }
+
+  .sidebar-identity span {
+    font-size: 0.85rem;
+  }
+
+  .sidebar-identity a {
+    display: none;
+  }
+
+  .auth-info {
+    order: 2;
+    grid-column: 2;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  .site-nav {
+    order: 3;
+    grid-column: 1 / -1;
+    gap: 0.35rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--divider);
+  }
+
+  .site-nav a {
+    padding: 0.3rem 0.65rem;
+    font-size: 1rem;
+  }
+}
