@@ -209,7 +209,11 @@ to know if there are more, and pages by `created_at` past the last status shown
 (`lt` for latest first, `gt` for oldest first), not by offset. Changing the order
 reloads from the first page, and responses that arrive after the order changed
 are dropped. Posting on the home page switches back to "Latest first" so the new
-status is visible. The order is not remembered between visits.
+status is visible. The order is not remembered between visits. Motion: rows
+added by "Show older / newer" spring up one after another (`.status-enter`, 0.45s,
+70ms stagger; the first page is not animated), and the button presses down and
+pulses while loading. Keep motion short and subtle, and turn it off under
+`prefers-reduced-motion`.
 
 Profile page: the header card shows the avatar, display name and one muted line,
 "@username · Joined Sep 2026 · 14 statuses" (the joined month comes from
