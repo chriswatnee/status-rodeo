@@ -531,6 +531,14 @@ textarea:focus-visible {
   border-top: 0;
 }
 
+/* The avatar stays at the top of the row, level with the name. Short posts still
+   have their text centered beside it (the row is as tall as the avatar), and a
+   long post no longer leaves the avatar floating in the middle of the row. */
+.status > .avatar,
+.status-skeleton > .skeleton-avatar {
+  align-self: start;
+}
+
 .status-body {
   min-width: 0;
 }
