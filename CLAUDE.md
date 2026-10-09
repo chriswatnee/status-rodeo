@@ -56,11 +56,22 @@ fallback. No `_redirects` file is needed.
 ## Structure
 
 - `src/main.js` holds client-side routing by pathname (`/`, `/users/:username`,
-  otherwise not-found) and all views. The sidebar is shared by the home and
-  profile pages: `sidebarMarkup()` renders it and `initSidebar()` handles sign-in,
-  sign-out and the signed-in identity, with `onSession` and `onProfile` hooks (the
-  home page uses them for the composer). Change the sidebar in those two
-  functions, not per page.
+  otherwise not-found) and all views. Links to app pages are intercepted and
+  navigate with the History API (`navigate()`, `popstate`), so moving between
+  pages never reloads the browser page; other links, new-tab or modified clicks
+  and `#` links behave normally. The masthead and sidebar are a shared frame built
+  once by `mount()`; each page replaces only `#page` (the area beside the sidebar).
+  `route()` draws the page for the current path (and runs last in the file, after
+  everything it uses is defined). The sidebar is built by `sidebarMarkup()` and
+  wired once by `initSidebar()`, which handles sign-in, sign-out and the signed-in
+  identity and keeps the auth state in module variables. A page reacts to the
+  signed-in state with `setPageHooks({ onSession, onProfile })` (the home page uses
+  them for the composer); the hooks run at once if the state is already known.
+  `updateNav()` marks the current page in the navigation. Change the sidebar in
+  those functions, not per page. A page that loads data asynchronously must check
+  `isCurrent()` (passed to `renderUserPage`) after awaiting, so a visitor who has
+  moved on isn't overwritten. Each page sets `document.title`. Not-found is drawn
+  inside the frame, with the sidebar.
 - `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
   works on whole characters (grapheme clusters), so a name starting with an emoji
   isn't cut in half. It has unit tests.
@@ -182,7 +193,8 @@ for the feed heading, profile name and avatar letters). The masthead is
 `public/masthead.webp` (3072x768, 4:1, quality-90 WebP; the original PNG is
 kept outside the repo), rendered full width above the app by the `masthead()`
 helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
-`/` on every page except the home page. Under 640px a `<picture>` source swaps in
+`/` on every page except the home page (the picture is moved in and out of the
+link, never rebuilt, so the image doesn't reload). Under 640px a `<picture>` source swaps in
 `public/masthead-mobile.webp` (1536x768, 2:1, quality-90 WebP): a tighter crop of
 the same artwork (cowboy, horse, dog and the sign, from x 614 to 2150 of the
 3072px original) so the sign stays readable, and the placeholder becomes 2:1.
