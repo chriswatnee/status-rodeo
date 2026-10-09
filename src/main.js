@@ -2,6 +2,7 @@ import './style.css';
 import { supabase } from './supabase.js';
 import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
 import { submitStatus } from './post-status.js';
+import { readSortOrder, saveSortOrder } from './sort-order.js';
 import { avatarLetter } from './avatar-letter.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
@@ -604,7 +605,8 @@ function sortSelectMarkup() {
 function createFeedPager({ feed, more, sortSelect, title, select, filter = (query) => query, toRow, emptyMessage }) {
   const PAGE_SIZE = 5;
   const button = more.querySelector('button');
-  let ascending = false;
+  // Starts in the order the visitor last picked (Latest first if none).
+  let ascending = readSortOrder() === 'asc';
   let cursor = null;
   let generation = 0;
 
@@ -695,6 +697,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
   }
 
   sortSelect.addEventListener('change', () => {
+    saveSortOrder(sortSelect.value);
     load({ ascending: sortSelect.value === 'asc', motion: 'fade' });
   });
 
