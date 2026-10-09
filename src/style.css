@@ -522,7 +522,7 @@ textarea:focus-visible {
   grid-template-columns: var(--avatar) 1fr;
   gap: 1rem;
   align-items: center;
-  padding: 0.45rem var(--inset);
+  padding: 0.55rem var(--inset);
   border-top: 1px solid var(--divider);
 }
 
@@ -570,9 +570,21 @@ textarea:focus-visible {
 
 /* Wide layout: narrow sidebar beside a much larger main column */
 
+@media (min-width: 640px) and (max-width: 1119px) {
+  /* The sidebar is under about 240px wide here, too narrow for the avatar and
+     "View profile →" side by side (the link wraps), so the identity goes below. */
+  .sidebar-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+}
+
 @media (min-width: 640px) {
   .site {
-    width: min(81rem, calc(100% - 1.4rem));
+    /* About 0.7rem of margin each side, but never less than 14px, which the
+       root font size would otherwise undercut at tablet widths. */
+    width: min(81rem, calc(100% - 2 * max(0.7rem, 14px)));
   }
 
   .app-layout {
