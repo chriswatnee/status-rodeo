@@ -70,7 +70,10 @@ fallback. No `_redirects` file is needed.
   `updateNav()` marks the current page in the navigation. Change the sidebar in
   those functions, not per page. A page that loads data asynchronously must check
   `isCurrent()` (passed to `renderUserPage`) after awaiting, so a visitor who has
-  moved on isn't overwritten. Each page sets `document.title`. Not-found is drawn
+  moved on isn't overwritten, and call `pageReady()` once its title is known: after a
+  navigation (not the first load) it announces the new page title in a hidden
+  live region (`#route-announcer`) and, if the clicked link is gone, moves focus
+  to `#page`. Each page sets `document.title`. Not-found is drawn
   inside the frame, with the sidebar.
 - `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
   works on whole characters (grapheme clusters), so a name starting with an emoji
@@ -163,6 +166,9 @@ redirect URLs are configured.
   `text-size-adjust`, `margin: 0` on form controls) and is not a full reset:
   everything else uses browser defaults, so set margins explicitly on elements
   you rely on.
+- Every control needs a visible keyboard focus ring (`:focus-visible` in
+  `src/style.css`, including `select`). Text colours were checked against WCAG AA
+  (4.5:1) on the panel and band backgrounds; keep new text at or above that.
 - Anything that looks interactive must actually work. Decoration must not create
   fake features.
 - `[hidden] { display: none !important; }` in `src/style.css` is intentional.
