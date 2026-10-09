@@ -727,6 +727,43 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     more.hidden = !page.hasMore;
   });
 
+  // On an iPhone, a tap that lands while the page is still moving (a fling or the
+  // bounce at the bottom) is used to stop the movement: the touch reaches the
+  // button, but the browser never sends the click, so the first tap seems to do
+  // nothing. If a short, still touch on the button ends with no click following,
+  // press the button ourselves. A normal tap sets `clicked` first, so it never
+  // runs twice.
+  let lastPress = null;
+
+  button.addEventListener('pointerdown', (event) => {
+    lastPress = event.pointerType === 'touch'
+      ? { x: event.clientX, y: event.clientY, at: performance.now(), clicked: false }
+      : null;
+  });
+
+  button.addEventListener('click', () => {
+    if (lastPress) lastPress.clicked = true;
+  });
+
+  button.addEventListener('pointercancel', () => {
+    lastPress = null;
+  });
+
+  button.addEventListener('pointerup', (event) => {
+    const press = lastPress;
+
+    if (!press || event.pointerType !== 'touch') return;
+    if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) return;
+    if (performance.now() - press.at > 500) return;
+
+    setTimeout(() => {
+      if (!press.clicked) {
+        press.clicked = true;
+        button.click();
+      }
+    }, 80);
+  });
+
   return { load };
 }
 
