@@ -172,6 +172,15 @@ function mount(markup, { linkHome }) {
   setMastheadLink(linkHome);
   pageHooks = {};
   frame.page.innerHTML = markup;
+
+  // After a navigation (not the first load) the new content fades and slides in.
+  // The class is removed and re-added so the animation restarts every time.
+  frame.page.classList.remove('page-enter');
+
+  if (announceNext) {
+    void frame.page.offsetWidth;
+    frame.page.classList.add('page-enter');
+  }
 }
 
 // The home page and the profile page differ in what they do when the signed-in
