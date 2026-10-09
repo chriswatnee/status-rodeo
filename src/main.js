@@ -59,13 +59,17 @@ const app = document.querySelector('#app');
 // of this file, once everything it uses exists.
 let frame = null;
 let navigation = 0;
+let announceNext = false;
 let pageHooks = {};
 let authKnown = false;
 let currentSession = null;
 // undefined until the signed-in user's profile loads; null if it failed.
 let currentProfile;
 
-function route() {
+// `moved` is true when the visitor navigated (not the first load), so the new
+// page is announced and focus is moved into it.
+function route(moved = false) {
+  announceNext = moved;
   const id = ++navigation;
   const isCurrent = () => id === navigation;
   const parts = window.location.pathname.split('/').filter(Boolean);
@@ -79,12 +83,38 @@ function route() {
   }
 
   updateNav();
+
+  // Pages that load data (profiles) call pageReady() themselves once their title
+  // is known.
+  if (parts.length === 0) pageReady();
+}
+
+// Tells screen readers which page they are now on and, if the link that was
+// clicked is gone, moves focus to the start of the new content so keyboard users
+// don't start again from the top of the document.
+function pageReady() {
+  if (!announceNext) return;
+
+  announceNext = false;
+
+  const announcer = document.querySelector('#route-announcer');
+
+  announcer.textContent = '';
+  setTimeout(() => {
+    announcer.textContent = document.title;
+  }, 50);
+
+  const active = document.activeElement;
+
+  if (!active || active === document.body || !document.contains(active)) {
+    frame.page.focus({ preventScroll: true });
+  }
 }
 
 function navigate(path) {
   if (path !== window.location.pathname + window.location.search) {
     window.history.pushState({}, '', path);
-    route();
+    route(true);
   }
 
   window.scrollTo(0, 0);
@@ -119,7 +149,7 @@ document.addEventListener('click', (event) => {
   navigate(url.pathname + url.search);
 });
 
-window.addEventListener('popstate', route);
+window.addEventListener('popstate', () => route(true));
 
 // Builds the frame on first use, then swaps the page content. `linkHome` is
 // whether the masthead links to the home page (everywhere except home).
@@ -130,8 +160,9 @@ function mount(markup, { linkHome }) {
       <main class="site">
         <div class="app-layout">
           ${sidebarMarkup()}
-          <div class="main-content" id="page"></div>
+          <div class="main-content" id="page" tabindex="-1"></div>
         </div>
+        <p id="route-announcer" class="visually-hidden" role="status"></p>
       </main>
     `;
     frame = { page: app.querySelector('#page') };
@@ -462,6 +493,7 @@ async function renderUserPage(username, isCurrent) {
   }
 
   document.title = `${profile.display_name} (@${profile.username}) · Status Rodeo`;
+  pageReady();
   profileName.textContent = profile.display_name;
   profileUsername.textContent = `@${profile.username}`;
   profileAvatar.replaceChildren(
@@ -826,6 +858,7 @@ function renderNotFound() {
     <h2>Page not found</h2>
     <p><a href="/">Back to Status Rodeo</a></p>
   `, { linkHome: true });
+  pageReady();
 }
 
 // A user's avatar, expected at /avatars/<username>.webp. While the file loads the
