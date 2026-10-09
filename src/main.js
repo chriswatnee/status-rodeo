@@ -322,7 +322,10 @@ async function renderUserPage(username) {
             <span id="profile-avatar"><span class="avatar" data-state="loading"></span></span>
             <div>
               <h2 id="profile-name"></h2>
-              <p id="profile-username"></p>
+              <p>
+                <span id="profile-username"></span>
+                <span id="profile-meta" class="profile-meta" hidden></span>
+              </p>
             </div>
           </section>
 
@@ -340,11 +343,12 @@ async function renderUserPage(username) {
   const profileAvatar = document.querySelector('#profile-avatar');
   const profileName = document.querySelector('#profile-name');
   const profileUsername = document.querySelector('#profile-username');
+  const profileMeta = document.querySelector('#profile-meta');
   const feed = document.querySelector('.feed');
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('user_id, username, display_name')
+    .select('user_id, username, display_name, created_at')
     .eq('username', username)
     .single();
 
@@ -354,25 +358,53 @@ async function renderUserPage(username) {
     return;
   }
 
+  document.title = `${profile.display_name} (@${profile.username}) · Status Rodeo`;
   profileName.textContent = profile.display_name;
   profileUsername.textContent = `@${profile.username}`;
   profileAvatar.replaceChildren(
     createAvatar(profile.username, profile.display_name)
   );
 
-  const { data: statuses, error: statusesError } = await supabase
-    .from('statuses')
-    .select('content, created_at')
-    .eq('user_id', profile.user_id)
-    .eq('visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(5);
+  const joined = `Joined ${new Date(profile.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+  })}`;
+  profileMeta.textContent = joined;
+  profileMeta.hidden = false;
+
+  const [{ data: statuses, error: statusesError }, { count, error: countError }] =
+    await Promise.all([
+      supabase
+        .from('statuses')
+        .select('content, created_at')
+        .eq('user_id', profile.user_id)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('statuses')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.user_id)
+        .eq('visibility', 'public'),
+    ]);
+
+  if (countError) {
+    console.error(countError);
+  } else if (count !== null) {
+    profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
+  }
 
   feed.removeAttribute('aria-busy');
   feed.replaceChildren();
 
   if (statusesError) {
     console.error(statusesError);
+    feed.append(createFeedMessage("Couldn't load statuses."));
+    return;
+  }
+
+  if (statuses.length === 0) {
+    feed.append(createFeedMessage(`${profile.display_name} hasn't posted yet.`));
     return;
   }
 
@@ -562,6 +594,7 @@ function initSidebar({ onSession, onProfile, currentUsername } = {}) {
 }
 
 function renderNotFound() {
+  document.title = 'Page not found · Status Rodeo';
   app.innerHTML = `
     ${masthead(true)}
     <main class="site">
@@ -638,6 +671,15 @@ function feedPlaceholder() {
   `;
 
   return `${row.repeat(3)}<p class="visually-hidden" role="status">Loading statuses</p>`;
+}
+
+// A short line of text shown inside the feed panel instead of statuses.
+function createFeedMessage(text) {
+  const message = document.createElement('p');
+  message.className = 'feed-message';
+  message.textContent = text;
+
+  return message;
 }
 
 function createStatusRow({ username, displayName, content, createdAt }) {
