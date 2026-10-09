@@ -740,7 +740,6 @@ function sidebarMarkup() {
             <div class="sidebar-identity">
               <strong id="sidebar-display-name"></strong>
               <span id="sidebar-username"></span>
-              <a id="view-profile-link" href="#">View profile</a>
             </div>
           </section>
 
@@ -785,7 +784,6 @@ function initSidebar() {
   const sidebarAvatar = document.querySelector('#sidebar-avatar');
   const sidebarDisplayName = document.querySelector('#sidebar-display-name');
   const sidebarUsername = document.querySelector('#sidebar-username');
-  const viewProfileLink = document.querySelector('#view-profile-link');
   const profileLink = document.querySelector('#profile-link');
   const profileErrorNote = document.querySelector('#profile-error');
 
@@ -832,7 +830,6 @@ function initSidebar() {
       createAvatar(profile.username, profile.display_name)
     );
 
-    viewProfileLink.href = `/users/${profile.username}`;
     profileLink.href = `/users/${profile.username}`;
 
     sidebarProfile.hidden = false;
@@ -871,7 +868,6 @@ function initSidebar() {
       sidebarDisplayName.textContent = '';
       sidebarUsername.textContent = '';
       sidebarAvatar.replaceChildren();
-      viewProfileLink.href = '#';
       profileLink.href = '#';
     }
   }

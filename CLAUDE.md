@@ -240,8 +240,8 @@ Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.85rem, top and bottom padding of the sidebar, composer and profile card, so
 their avatars line up). Use them instead of new one-off values. The sidebar
 identity block uses a tight line-height so the avatar, not the text, sets its
-row height. From 640px to 1119px the sidebar is under about 240px wide, so its
-avatar stacks above the name (side by side, "View profile →" wraps). The page's
+row height. The sidebar identity is the avatar beside the name and @username at every
+width; there is no "View profile" link ("My profile" in the navigation goes to the same page). The page's
 side margin is about 0.7rem but never under 14px, and feed rows have 0.55rem of
 vertical padding. In a feed row the avatar is top-aligned (level with the name)
 while the text block is centered, so short posts look centered beside the avatar
@@ -276,8 +276,10 @@ smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. A
 unknown username shows "Page not found", and so does any unknown path: a panel
 (`.notice`) with the display-font heading and a link back home.
 
-Composer: a live `0/280` counter sits left of the Post button in the existing
-muted colour. It turns rust and bold with 20 or fewer characters left, and a
+Composer: the text field and its actions are one rounded box (`.composer-fields`,
+which draws the focus ring via `:focus-within`): the text on top, then a row with
+the live `0/280` counter at the left and the Post button at the right, and any
+error message under it. The counter is in the existing muted colour. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty
 or over-limit statuses are not sent, and a failed post keeps the text and shows a

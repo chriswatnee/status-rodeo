@@ -325,19 +325,6 @@ textarea:focus-visible {
   font-size: 0.9rem;
 }
 
-.sidebar-identity a {
-  font-size: 1rem;
-  text-decoration: none;
-}
-
-.sidebar-identity a:hover {
-  text-decoration: underline;
-}
-
-.sidebar-identity a::after {
-  content: ' →';
-}
-
 .site-nav {
   display: flex;
   flex-wrap: wrap;
@@ -535,22 +522,37 @@ textarea:focus-visible {
   padding: var(--inset-y) var(--inset);
 }
 
+/* The text and its actions live in one box: the counter bottom-left, Post
+   bottom-right. The box shows the focus ring when the text field has focus. */
 .composer-fields {
   display: grid;
-  gap: 0.5rem;
+  gap: 0;
   min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--input);
+}
+
+.composer-fields:focus-within {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
 }
 
 .composer textarea {
   width: 100%;
-  min-height: 3.3rem;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  background: var(--input);
+  min-height: 3.4rem;
+  padding: 0.7rem 0.9rem 0.3rem;
+  border: 0;
+  border-radius: var(--radius-small) var(--radius-small) 0 0;
+  background: transparent;
   color: var(--text);
   font-size: 1.05rem;
   resize: vertical;
+}
+
+/* The box draws the ring, not the field inside it. */
+.composer textarea:focus-visible {
+  outline: none;
 }
 
 .composer textarea::placeholder {
@@ -560,8 +562,9 @@ textarea:focus-visible {
 .composer-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
+  padding: 0.2rem 0.55rem 0.55rem 0.9rem;
 }
 
 .char-count {
@@ -577,6 +580,7 @@ textarea:focus-visible {
 
 .composer-note {
   margin: 0;
+  padding: 0 0.9rem 0.6rem;
   color: var(--warn);
   font-size: 0.95rem;
   text-align: right;
@@ -895,16 +899,6 @@ textarea:focus-visible {
 
 /* Wide layout: narrow sidebar beside a much larger main column */
 
-@media (min-width: 640px) and (max-width: 1119px) {
-  /* The sidebar is under about 240px wide here, too narrow for the avatar and
-     "View profile →" side by side (the link wraps), so the identity goes below. */
-  .sidebar-profile {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-}
-
 @media (min-width: 640px) {
   .site {
     /* About 0.7rem of margin each side, but never less than 14px, which the
@@ -947,10 +941,8 @@ textarea:focus-visible {
 
 /*
   Phone sidebar: a slim two-row bar instead of a tall card. Row one is the
-  identity (small avatar, name, @username) with "Signed in · Sign out" beside it;
-  row two is the navigation. "View profile" is left out here because "My profile"
-  in the navigation goes to the same page. Errors and the sign-in form take the
-  full first row.
+  identity (small avatar, name, @username) with Sign out beside it; row two is the
+  navigation. Errors and the sign-in form take the full first row.
 */
 @media (max-width: 639px) {
   .sidebar {
@@ -986,10 +978,6 @@ textarea:focus-visible {
 
   .sidebar-identity span {
     font-size: 0.85rem;
-  }
-
-  .sidebar-identity a {
-    display: none;
   }
 
   .auth-info {
@@ -1046,7 +1034,7 @@ textarea:focus-visible {
   }
 
   .composer textarea {
-    padding: 0.6rem 0.7rem;
+    padding: 0.6rem 0.7rem 0.3rem;
     font-size: 1rem;
   }
 
