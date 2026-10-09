@@ -256,7 +256,12 @@ to know if there are more, and pages by `created_at` past the last status shown
 (`lt` for latest first, `gt` for oldest first), not by offset. Changing the order
 reloads from the first page, and responses that arrive after the order changed
 are dropped. Posting on the home page switches back to "Latest first" so the new
-status is visible. The order is not remembered between visits. Motion: rows
+status is visible. The chosen order is remembered in this browser
+(`src/sort-order.js`, `localStorage` key `status-rodeo:sort-order`, `asc` or `desc`,
+with unit tests): both feeds start in it, and picking an order in either dropdown
+saves it for both. It is per browser and device, not in the database, and if
+storage is blocked it quietly falls back to Latest first. The switch to Latest first
+after posting is temporary and does not change the saved choice. Motion: rows
 added by "Show older / newer" spring up one after another (`.status-enter`, 0.45s,
 70ms stagger), a status you just posted pops in at the top, and all rows fade in
 (`.status-fade`, 0.3s) after the sort order changes. The first page load is not
