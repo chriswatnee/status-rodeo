@@ -6,6 +6,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/lora-variable.woff') format('woff');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   Palette, radius, shadow, and proportions are sampled from the design mockup.
   Sizes are in rem. The root size grows with the viewport (about 20px at 1536px
@@ -42,6 +50,8 @@
 
   /* Self-hosted Zilla Slab Bold (public/fonts), Georgia as the fallback. */
   --font-display: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+  /* Self-hosted Lora (public/fonts, Latin subset, weights 400-700) for body text. */
+  --font-body: 'Lora', Georgia, 'Times New Roman', serif;
 
   --avatar: 4rem;
 
@@ -50,7 +60,7 @@
   --inset: 1.3rem; /* side padding inside a panel */
   --inset-y: 0.85rem; /* top and bottom padding inside a panel */
 
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: clamp(100%, 1.3vw, 131%);
   line-height: 1.4;
   color: var(--text);
@@ -93,6 +103,7 @@ a {
 
 button,
 input,
+select,
 textarea {
   margin: 0;
   font: inherit;
