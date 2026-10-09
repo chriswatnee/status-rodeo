@@ -265,7 +265,11 @@ and slides in (`.page-enter`, 0.3s); the first load is not animated. Buttons pre
 while loading. A pressed button's tappable area shrinks with it, so each of those
 buttons has an invisible `::after` layer (`inset: -3%`) that keeps the full area
 tappable; without it a press near the edge of the wide "Show older" button only
-gave it focus and lost the click. Keep that layer if you change the press effect. Hover styles are
+gave it focus and lost the click. Keep that layer if you change the press effect. On iPhones a tap that lands while the page is still moving (a fling or
+the bounce at the bottom) reaches the button but gets no click, so the first tap
+seemed to do nothing; the pager (`createFeedPager()`) therefore presses "Show
+older / newer" itself when a short, still touch ends on it and no click follows (a
+normal tap sets a flag first, so it never runs twice). Hover styles are
 wrapped in `@media (hover: hover)` so phones never get them (an animated hover style
 can make iOS treat the first tap as "just hovering" and skip the click), and links,
 buttons and selects have `touch-action: manipulation`. Put new `:hover` rules inside
