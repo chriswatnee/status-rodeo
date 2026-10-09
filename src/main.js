@@ -4,6 +4,7 @@ import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.j
 import { submitStatus } from './post-status.js';
 import { avatarLetter } from './avatar-letter.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
+import { iconMarkup } from './icons.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -758,8 +759,8 @@ function sidebarMarkup() {
           </section>
 
           <nav class="site-nav">
-            <a href="/">Home</a>
-            <a id="profile-link" href="#" hidden>My profile</a>
+            <a href="/">${iconMarkup('home')}Home</a>
+            <a id="profile-link" href="#" hidden>${iconMarkup('profile')}My profile</a>
           </nav>
 
           <div class="auth-info">
