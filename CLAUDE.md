@@ -202,7 +202,8 @@ and long posts don't leave the avatar floating mid-row.
 
 Feeds: the home feed (everyone) and the profile feed share `createFeedPager()` in
 `src/main.js`. A "Latest first / Oldest first" dropdown sits in the panel heading
-(`sortSelectMarkup()`). Five statuses show at a time, with a "Show older" button
+(`sortSelectMarkup()`); the heading reads "Recent Statuses" for Latest first and
+"Oldest Statuses" for Oldest first. Five statuses show at a time, with a "Show older" button
 ("Show newer" in oldest-first order) that loads the next 5. The pager asks for 6
 to know if there are more, and pages by `created_at` past the last status shown
 (`lt` for latest first, `gt` for oldest first), not by offset. Changing the order
