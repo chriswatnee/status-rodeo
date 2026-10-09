@@ -184,6 +184,14 @@ helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
 the same artwork (cowboy, horse, dog and the sign, from x 614 to 2150 of the
 3072px original) so the sign stays readable, and the placeholder becomes 2:1.
 
+Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
+(0.9rem, between panels in both directions and under the masthead), `--inset`
+(1.3rem, side padding inside every panel, feed rows included) and `--inset-y`
+(0.85rem, top and bottom padding of the sidebar, composer and profile card, so
+their avatars line up). Use them instead of new one-off values. The sidebar
+identity block uses a tight line-height so the avatar, not the text, sets its
+row height.
+
 Composer: a live `0/280` counter sits left of the Post button in the existing
 muted colour. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
