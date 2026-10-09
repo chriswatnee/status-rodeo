@@ -45,6 +45,11 @@
 
   --avatar: 4rem;
 
+  /* Spacing shared by every panel. */
+  --gap: 0.9rem; /* between panels, in both directions */
+  --inset: 1.3rem; /* side padding inside a panel */
+  --inset-y: 0.85rem; /* top and bottom padding inside a panel */
+
   font-family: system-ui, sans-serif;
   font-size: clamp(100%, 1.3vw, 131%);
   line-height: 1.4;
@@ -101,7 +106,7 @@ textarea:focus-visible {
 .site {
   width: min(81rem, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 1.5rem 0 3rem;
+  padding: var(--gap) 0 3rem;
 }
 
 /* The masthead is full width, above the app. Its image keeps a 4:1 ratio. */
@@ -133,7 +138,7 @@ textarea:focus-visible {
 
 .app-layout {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--gap);
   align-items: start;
 }
 
@@ -236,20 +241,23 @@ textarea:focus-visible {
 /* Sidebar */
 
 .sidebar {
-  padding: 1.3rem;
+  padding: var(--inset-y) var(--inset);
 }
 
 .sidebar-profile {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1rem;
 }
 
 .sidebar-identity {
   display: grid;
-  gap: 0.1rem;
+  /* Tight enough that the avatar, not the text, sets the row height, so its
+     top lines up with the composer's and the profile card's avatars. */
+  gap: 0;
   min-width: 0;
+  line-height: 1.2;
 }
 
 .sidebar-identity strong {
@@ -306,7 +314,7 @@ textarea:focus-visible {
 .login {
   display: grid;
   gap: 0.4rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1rem;
 }
 
 .login label {
@@ -394,8 +402,8 @@ textarea:focus-visible {
   grid-template-columns: var(--avatar) 1fr;
   gap: 1rem;
   align-items: start;
-  margin-bottom: 0.8rem;
-  padding: 0.85rem 1.3rem;
+  margin-bottom: var(--gap);
+  padding: var(--inset-y) var(--inset);
 }
 
 .composer-fields {
@@ -456,8 +464,8 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.8rem;
-  padding: 1rem 1.3rem;
+  margin-bottom: var(--gap);
+  padding: var(--inset-y) var(--inset);
 }
 
 .profile h2 {
@@ -481,7 +489,7 @@ textarea:focus-visible {
 
 .panel-heading {
   margin: 0;
-  padding: 0.3rem 1.4rem;
+  padding: 0.3rem var(--inset);
   border-bottom: 1px solid var(--divider);
   background: var(--band);
   font-family: var(--font-display);
@@ -500,7 +508,7 @@ textarea:focus-visible {
   grid-template-columns: var(--avatar) 1fr;
   gap: 1rem;
   align-items: center;
-  padding: 0.45rem 1.4rem;
+  padding: 0.45rem var(--inset);
   border-top: 1px solid var(--divider);
 }
 
