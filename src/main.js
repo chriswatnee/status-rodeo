@@ -678,7 +678,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
       setErrorNote(message, "Couldn't load statuses.");
       const retry = document.createElement('button');
       retry.type = 'button';
-      retry.innerHTML = `${iconMarkup('refresh')}Try again`; // static markup
+      retry.textContent = 'Try again';
       retry.addEventListener('click', () => load());
       message.append(' ', retry);
       feed.append(message);
@@ -746,7 +746,7 @@ function sidebarMarkup() {
 
           <p id="profile-error" class="profile-error" role="status" hidden>
             ${iconMarkup('error', 'icon-error')}Couldn't load your profile.
-            <button type="button">${iconMarkup('refresh')}Try again</button>
+            <button type="button">Try again</button>
           </p>
 
           <section id="login" class="login" hidden>
