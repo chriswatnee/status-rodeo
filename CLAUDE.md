@@ -190,7 +190,10 @@ Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.85rem, top and bottom padding of the sidebar, composer and profile card, so
 their avatars line up). Use them instead of new one-off values. The sidebar
 identity block uses a tight line-height so the avatar, not the text, sets its
-row height.
+row height. From 640px to 1119px the sidebar is under about 240px wide, so its
+avatar stacks above the name (side by side, "View profile →" wraps). The page's
+side margin is about 0.7rem but never under 14px, and feed rows have 0.55rem of
+vertical padding.
 
 Composer: a live `0/280` counter sits left of the Post button in the existing
 muted colour. It turns rust and bold with 20 or fewer characters left, and a
