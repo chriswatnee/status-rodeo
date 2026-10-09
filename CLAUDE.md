@@ -145,6 +145,10 @@ redirect URLs are configured.
 
 - Render user-provided content with `textContent` or DOM APIs, never `innerHTML`.
   Static template markup is fine.
+- `src/style.css` starts with a minimal browser reset (global `border-box`,
+  `text-size-adjust`, `margin: 0` on form controls) and is not a full reset:
+  everything else uses browser defaults, so set margins explicitly on elements
+  you rely on.
 - Anything that looks interactive must actually work. Decoration must not create
   fake features.
 - `[hidden] { display: none !important; }` in `src/style.css` is intentional.
