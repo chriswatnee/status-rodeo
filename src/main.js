@@ -2,6 +2,7 @@ import './style.css';
 import { supabase } from './supabase.js';
 import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
 import { submitStatus } from './post-status.js';
+import { avatarLetter } from './avatar-letter.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -581,7 +582,7 @@ function createAvatar(username, displayName) {
   const avatar = document.createElement('span');
   avatar.className = 'avatar';
   avatar.dataset.state = 'loading';
-  avatar.textContent = (displayName || username || '?').charAt(0).toUpperCase();
+  avatar.textContent = avatarLetter(displayName, username);
 
   const url = `/avatars/${encodeURIComponent(username)}.webp`;
 
