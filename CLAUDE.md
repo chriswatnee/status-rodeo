@@ -211,10 +211,11 @@ have theirs (`public/avatars/chris.webp`, `public/avatars/sofie.webp`: 512x512 R
 quality-92 WebPs, full-bleed artwork with its own sky background; the frame, border and
 rounded corners are CSS). A new user needs a same-named square WebP. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
-for the feed heading, profile name and avatar letters). Body text, statuses and controls use self-hosted Poppins
-(`public/fonts/poppins-Regular.woff` and `poppins-Bold.woff`, Latin subsets,
-`--font-body`), with the system sans-serif as the fallback; form controls inherit it.
-A serif body (Lora) was tried and rejected: it made the feed read like a blog. The masthead is
+for the feed heading, profile name and avatar letters). Body text, statuses and controls use self-hosted Nunito
+(`public/fonts/nunito-variable.woff`, a Latin subset of the variable font limited to
+weights 400-800, `--font-body`), with the system sans-serif as the fallback; form
+controls inherit it. Lora (a serif) was tried and rejected because it made the feed
+read like a blog, and Poppins because it was too wide for small phones. The masthead is
 `public/masthead.webp` (3072x768, 4:1, quality-90 WebP; the original PNG is
 kept outside the repo), rendered full width above the app by the `masthead()`
 helper in `src/main.js`, with alt text and a visually hidden `h1`. It links to
