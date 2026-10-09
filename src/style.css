@@ -716,6 +716,24 @@ textarea:focus-visible {
   transform: scale(0.96);
 }
 
+/* A button shrinks while it is pressed, and its tappable area shrinks with it. On
+   a wide button such as "Show older", a press near the left or right edge ended
+   up outside the shrunken button, so it only took focus and the click was lost.
+   This invisible layer keeps the full area tappable while the button is pressed. */
+.feed-more button,
+.login button,
+.composer button {
+  position: relative;
+}
+
+.feed-more button::after,
+.login button::after,
+.composer button::after {
+  content: '';
+  position: absolute;
+  inset: -3%;
+}
+
 .feed-more button[aria-busy='true'] {
   animation: pulse-text 0.9s ease-in-out infinite;
 }
