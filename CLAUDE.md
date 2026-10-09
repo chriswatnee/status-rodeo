@@ -166,6 +166,19 @@ redirect URLs are configured.
   `text-size-adjust`, `margin: 0` on form controls) and is not a full reset:
   everything else uses browser defaults, so set margins explicitly on elements
   you rely on.
+- Icons: the Status Rodeo icon family is 25 hand-drawn 24x24 SVGs in `src/icons/`
+  (one file each, kebab-case names: home, profile, users, search, notifications,
+  settings, sign-out, sign-in, edit-profile, pencil, delete, reply, like, share,
+  copy-link, more, refresh, history, success, warning, error, info, close, back,
+  external-link). They are drawn with `currentColor`, a 1.5 stroke, round caps and
+  joins, and a soft 18% fill in the same colour; no gradients. Only icons imported
+  in `src/icons.js` are bundled (Vite `?raw`), so add an import and an entry when
+  you first use one. `iconMarkup(name)` returns the decorative markup
+  (`<span class="icon" aria-hidden="true">`), for use beside text that already
+  names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
+  only used in the existing nav items (Home, My profile). Don't add links or
+  features just because an icon exists. The `pencil` icon serves both new status
+  and edit status.
 - A "Skip to content" link is the first focusable element (`.skip-link`, built by
   `mount()`). It is off-screen until focused; its click is handled in the
   document click listener, which focuses `#page` without changing the address.
