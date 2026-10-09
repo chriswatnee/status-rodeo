@@ -170,7 +170,7 @@ redirect URLs are configured.
   (one file each, kebab-case names: home, profile, users, search, notifications,
   settings, sign-out, sign-in, edit-profile, pencil, delete, reply, like, share,
   copy-link, more, refresh, history, success, warning, error, info, close, back,
-  external-link). They are drawn with `currentColor`, a 1.5 stroke, round caps and
+  external-link). They are drawn with `currentColor`, a 1.8 stroke, round caps and
   joins, and a soft 18% fill in the same colour; no gradients. Only icons imported
   in `src/icons.js` are bundled (Vite `?raw`), so add an import and an entry when
   you first use one. `iconMarkup(name)` returns the decorative markup
