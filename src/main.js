@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
 import { submitStatus } from './post-status.js';
 import { avatarLetter } from './avatar-letter.js';
+import { relativeTime, absoluteTime } from './relative-time.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -821,15 +822,20 @@ function createTimeElement(createdAt) {
   const time = document.createElement('time');
 
   time.dateTime = createdAt;
-  time.textContent = new Date(createdAt).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  time.title = absoluteTime(createdAt);
+  time.textContent = relativeTime(createdAt);
 
   return time;
 }
+
+// Relative times go stale while a page stays open, so refresh them each minute.
+function refreshTimes() {
+  for (const time of document.querySelectorAll('time[datetime]')) {
+    time.textContent = relativeTime(time.dateTime);
+  }
+}
+
+setInterval(refreshTimes, 60 * 1000);
 
 // The illustrated masthead is its own image asset (public/masthead.webp, with a
 // tighter phone crop in public/masthead-mobile.webp). The words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.

@@ -256,8 +256,11 @@ Target:
 - Avatars are illustrated image assets named by username (for example
   `/avatars/<username>.webp`), chosen over a database column for now. Changing an
   avatar or the interface must never require changing the masthead.
-- Times stay absolute (for example "Oct 7, 6:40 AM"). The mockup's relative
-  times are illustrative; do not change this without asking.
+- Times are relative, as in the mockup (`src/relative-time.js`, with unit tests):
+  "just now", "5 minutes ago", "2 hours ago", "1 day ago" up to 6 days, then a
+  plain date ("Oct 7", or "Oct 7, 2025" from another year). The exact time is in
+  the `<time>` element's tooltip (`title`) and `datetime`. Visible times refresh
+  every minute while a page stays open.
 - The mobile layout is designed deliberately, not by scaling the desktop layout
   down. The masthead crop is done; the column collapse and the rest of the phone
   layout are still to be reviewed.
