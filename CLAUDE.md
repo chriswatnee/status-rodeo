@@ -166,6 +166,9 @@ redirect URLs are configured.
   `text-size-adjust`, `margin: 0` on form controls) and is not a full reset:
   everything else uses browser defaults, so set margins explicitly on elements
   you rely on.
+- A "Skip to content" link is the first focusable element (`.skip-link`, built by
+  `mount()`). It is off-screen until focused; its click is handled in the
+  document click listener, which focuses `#page` without changing the address.
 - Every control needs a visible keyboard focus ring (`:focus-visible` in
   `src/style.css`, including `select`). Text colours were checked against WCAG AA
   (4.5:1) on the panel and band backgrounds; keep new text at or above that.
