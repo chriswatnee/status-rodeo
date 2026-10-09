@@ -200,6 +200,15 @@ vertical padding. In a feed row the avatar is top-aligned (level with the name)
 while the text block is centered, so short posts look centered beside the avatar
 and long posts don't leave the avatar floating mid-row.
 
+Profile page: the header card shows the avatar, display name and one muted line,
+"@username · Joined Sep 2026 · 14 statuses" (the joined month comes from
+`profiles.created_at`; the count is a second, head-only query, and is left out
+if it fails). The tab title is "Display name (@username) · Status Rodeo". The
+feed shows that user's latest 5 public statuses, or "Name hasn't posted yet.",
+or "Couldn't load statuses." if the query fails. The line stays on one row so the
+card is only as tall as the avatar and lines up with the sidebar. An unknown
+username shows "Page not found".
+
 Composer: a live `0/280` counter sits left of the Post button in the existing
 muted colour. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
