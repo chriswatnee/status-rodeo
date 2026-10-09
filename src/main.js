@@ -928,8 +928,10 @@ function initSidebar() {
 function renderNotFound() {
   document.title = 'Page not found · Status Rodeo';
   mount(`
-    <h2>Page not found</h2>
-    <p><a href="/">Back to Status Rodeo</a></p>
+    <section class="notice">
+      <h2>Page not found</h2>
+      <p><a href="/">Back to Status Rodeo</a></p>
+    </section>
   `, { linkHome: true });
   pageReady();
 }

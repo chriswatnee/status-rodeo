@@ -200,6 +200,7 @@ textarea:focus-visible {
 .sidebar,
 .composer,
 .profile,
+.notice,
 .feed-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -609,7 +610,35 @@ textarea:focus-visible {
 }
 
 /* "@chris · Joined Sep 2026 · 14 statuses": one line, so the card stays as tall
-   as the avatar. */
+   as the avatar. On a narrow phone it gets a little smaller, and if it still
+   doesn't fit it is cut off with an ellipsis rather than wrapping. */
+.profile > div {
+  min-width: 0;
+}
+
+.profile p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Page not found" and similar short pages: one panel with the display heading. */
+.notice {
+  padding: var(--inset-y) var(--inset);
+}
+
+.notice h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1.2;
+  color: var(--heading);
+}
+
+.notice p {
+  margin: 0.4rem 0 0;
+}
+
 .profile-meta::before {
   content: '· ';
 }
@@ -894,6 +923,14 @@ textarea:focus-visible {
 }
 
 @media (max-width: 639px) {
+  .profile {
+    gap: 0.75rem;
+  }
+
+  .profile p {
+    font-size: 0.82rem;
+  }
+
   .panel-heading {
     gap: 0.4rem;
   }

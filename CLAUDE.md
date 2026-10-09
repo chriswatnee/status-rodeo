@@ -271,8 +271,10 @@ Profile page: the header card shows the avatar, display name and one muted line,
 if it fails). The tab title is "Display name (@username) · Status Rodeo". The
 feed shows that user's latest 5 public statuses, or "Name hasn't posted yet.",
 or "Couldn't load statuses." if the query fails. The line stays on one row so the
-card is only as tall as the avatar and lines up with the sidebar. An unknown
-username shows "Page not found".
+card is only as tall as the avatar and lines up with the sidebar: on phones it is
+smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. An
+unknown username shows "Page not found", and so does any unknown path: a panel
+(`.notice`) with the display-font heading and a link back home.
 
 Composer: a live `0/280` counter sits left of the Post button in the existing
 muted colour. It turns rust and bold with 20 or fewer characters left, and a
