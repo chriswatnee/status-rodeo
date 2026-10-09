@@ -211,8 +211,10 @@ reloads from the first page, and responses that arrive after the order changed
 are dropped. Posting on the home page switches back to "Latest first" so the new
 status is visible. The order is not remembered between visits. Motion: rows
 added by "Show older / newer" spring up one after another (`.status-enter`, 0.45s,
-70ms stagger; the first page is not animated), and the button presses down and
-pulses while loading. Keep motion short and subtle, and turn it off under
+70ms stagger), a status you just posted pops in at the top, and all rows fade in
+(`.status-fade`, 0.3s) after the sort order changes. The first page load is not
+animated. Buttons press down (scale 0.96) when clicked, and "Show older" pulses
+while loading. Keep motion short and subtle, and turn it off under
 `prefers-reduced-motion`.
 
 Profile page: the header card shows the avatar, display name and one muted line,
