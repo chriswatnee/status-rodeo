@@ -914,3 +914,32 @@ textarea:focus-visible {
     font-size: 1rem;
   }
 }
+
+/*
+  Very small phones (320 to 360px): the composer placeholder and the feed
+  heading's sort dropdown no longer fit at normal size, so tighten the side
+  padding, the composer's avatar column and a few font sizes.
+*/
+@media (max-width: 360px) {
+  :root {
+    --inset: 1rem;
+  }
+
+  .composer {
+    --avatar: 2.75rem;
+    gap: 0.7rem;
+  }
+
+  .composer textarea {
+    padding: 0.6rem 0.7rem;
+    font-size: 1rem;
+  }
+
+  .panel-heading h2 {
+    font-size: 1.3rem;
+  }
+
+  .sort-select {
+    font-size: 0.9rem;
+  }
+}
