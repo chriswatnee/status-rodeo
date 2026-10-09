@@ -93,8 +93,14 @@ function renderHome() {
           </section>
 
           <section class="feed-panel">
-            <h2 class="panel-heading">Recent Statuses</h2>
+            <div class="panel-heading">
+              <h2>Recent Statuses</h2>
+              ${sortSelectMarkup()}
+            </div>
             <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
+            <div class="feed-more" hidden>
+              <button type="button">Show older</button>
+            </div>
           </section>
         </div>
       </div>
@@ -268,45 +274,35 @@ function renderHome() {
     }
   }
 
-  async function loadStatus() {
-    const { data, error } = await supabase
-      .from('statuses')
-      .select(`
-        *,
-        profiles (
-          display_name,
-          username
-        )
-      `)
-      .eq('visibility', 'public')
-      .order('created_at', { ascending: false })
-      .limit(5);
+  const pager = createFeedPager({
+    feed,
+    more: document.querySelector('.feed-more'),
+    sortSelect: document.querySelector('.sort-select'),
+    select: `
+      *,
+      profiles (
+        display_name,
+        username
+      )
+    `,
+    toRow: (status) => ({
+      username: status.profiles.username,
+      displayName: status.profiles.display_name,
+      content: status.content,
+      createdAt: status.created_at,
+    }),
+    emptyMessage: 'No statuses yet.',
+  });
 
-    feed.removeAttribute('aria-busy');
-
-    if (error) {
-      console.error(error);
-      feed.replaceChildren();
-      return;
-    }
-
-    feed.innerHTML = '';
-
-    for (const status of data) {
-      feed.append(
-        createStatusRow({
-          username: status.profiles.username,
-          displayName: status.profiles.display_name,
-          content: status.content,
-          createdAt: status.created_at,
-        })
-      );
-    }
+  // A new status belongs at the top of "Latest first", so posting switches back
+  // to that order.
+  function loadStatus() {
+    return pager.load({ ascending: false });
   }
 
   postButton.addEventListener('click', postStatus);
 
-  loadStatus();
+  pager.load();
 }
 
 async function renderUserPage(username) {
@@ -330,7 +326,10 @@ async function renderUserPage(username) {
           </section>
 
           <section class="feed-panel">
-            <h2 class="panel-heading">Recent Statuses</h2>
+            <div class="panel-heading">
+              <h2>Recent Statuses</h2>
+              ${sortSelectMarkup()}
+            </div>
             <div class="feed" aria-busy="true">${feedPlaceholder()}</div>
             <div class="feed-more" hidden>
               <button type="button">Show older</button>
@@ -349,7 +348,6 @@ async function renderUserPage(username) {
   const profileMeta = document.querySelector('#profile-meta');
   const feed = document.querySelector('.feed');
   const feedMore = document.querySelector('.feed-more');
-  const showOlderButton = feedMore.querySelector('button');
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -377,23 +375,68 @@ async function renderUserPage(username) {
   profileMeta.textContent = joined;
   profileMeta.hidden = false;
 
-  // Statuses come five at a time, newest first. One extra row is requested so we
-  // know whether there is an older page, and the next page starts below the
-  // oldest status shown (compared on created_at exactly as the database returned
-  // it), so a status posted meanwhile can't shift or repeat rows.
+  const pager = createFeedPager({
+    feed,
+    more: feedMore,
+    sortSelect: document.querySelector('.sort-select'),
+    select: 'content, created_at',
+    filter: (query) => query.eq('user_id', profile.user_id),
+    toRow: (status) => ({
+      username: profile.username,
+      displayName: profile.display_name,
+      content: status.content,
+      createdAt: status.created_at,
+    }),
+    emptyMessage: `${profile.display_name} hasn't posted yet.`,
+  });
+
+  pager.load();
+
+  const { count, error: countError } = await supabase
+    .from('statuses')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', profile.user_id)
+    .eq('visibility', 'public');
+
+  if (countError) {
+    console.error(countError);
+  } else if (count !== null) {
+    profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
+  }
+}
+
+// The sort dropdown above a feed. It is the only control in the heading, so
+// the heading text stays a real h2 beside it.
+function sortSelectMarkup() {
+  return `
+    <select class="sort-select" aria-label="Sort statuses">
+      <option value="desc">Latest first</option>
+      <option value="asc">Oldest first</option>
+    </select>
+  `;
+}
+
+// A feed of public statuses, five at a time, in either order. One extra row is
+// requested so we know whether there is another page, and the next page starts
+// past the last status shown (compared on created_at exactly as the database
+// returned it), so a status posted meanwhile can't shift or repeat rows. Results
+// that arrive after the order was changed are dropped.
+function createFeedPager({ feed, more, sortSelect, select, filter = (query) => query, toRow, emptyMessage }) {
   const PAGE_SIZE = 5;
-  let oldestShown = null;
+  const button = more.querySelector('button');
+  let ascending = false;
+  let cursor = null;
+  let generation = 0;
 
   async function fetchPage() {
-    let query = supabase
-      .from('statuses')
-      .select('content, created_at')
-      .eq('user_id', profile.user_id)
+    let query = filter(supabase.from('statuses').select(select))
       .eq('visibility', 'public')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending })
       .limit(PAGE_SIZE + 1);
 
-    if (oldestShown) query = query.lt('created_at', oldestShown);
+    if (cursor) {
+      query = ascending ? query.gt('created_at', cursor) : query.lt('created_at', cursor);
+    }
 
     const { data, error } = await query;
 
@@ -403,76 +446,85 @@ async function renderUserPage(username) {
   }
 
   function appendRows(rows) {
-    for (const status of rows) {
-      feed.append(
-        createStatusRow({
-          username: profile.username,
-          displayName: profile.display_name,
-          content: status.content,
-          createdAt: status.created_at,
-        })
-      );
-    }
+    for (const status of rows) feed.append(createStatusRow(toRow(status)));
 
-    oldestShown = rows[rows.length - 1].created_at;
+    cursor = rows[rows.length - 1].created_at;
   }
 
-  const [firstPage, { count, error: countError }] = await Promise.all([
-    fetchPage(),
-    supabase
-      .from('statuses')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', profile.user_id)
-      .eq('visibility', 'public'),
-  ]);
-
-  if (countError) {
-    console.error(countError);
-  } else if (count !== null) {
-    profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
+  function moreLabel() {
+    return ascending ? 'Show newer' : 'Show older';
   }
 
-  feed.removeAttribute('aria-busy');
-  feed.replaceChildren();
+  async function load(options = {}) {
+    if (options.ascending !== undefined) ascending = options.ascending;
 
-  if (firstPage.error) {
-    console.error(firstPage.error);
-    feed.append(createFeedMessage("Couldn't load statuses."));
-    return;
-  }
+    sortSelect.value = ascending ? 'asc' : 'desc';
+    cursor = null;
+    const mine = ++generation;
 
-  if (firstPage.rows.length === 0) {
-    feed.append(createFeedMessage(`${profile.display_name} hasn't posted yet.`));
-    return;
-  }
-
-  appendRows(firstPage.rows);
-  feedMore.hidden = !firstPage.hasMore;
-
-  showOlderButton.addEventListener('click', async () => {
-    if (showOlderButton.disabled) return;
-
-    showOlderButton.disabled = true;
-    showOlderButton.setAttribute('aria-busy', 'true');
-    showOlderButton.textContent = 'Loading…';
+    more.hidden = true;
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    button.textContent = moreLabel();
+    feed.setAttribute('aria-busy', 'true');
+    feed.innerHTML = feedPlaceholder();
 
     const page = await fetchPage();
 
-    showOlderButton.disabled = false;
-    showOlderButton.removeAttribute('aria-busy');
+    if (mine !== generation) return;
+
+    feed.removeAttribute('aria-busy');
+    feed.replaceChildren();
 
     if (page.error) {
       console.error(page.error);
-      showOlderButton.textContent = "Couldn't load older statuses. Try again";
+      feed.append(createFeedMessage("Couldn't load statuses."));
       return;
     }
 
-    showOlderButton.textContent = 'Show older';
+    if (page.rows.length === 0) {
+      feed.append(createFeedMessage(emptyMessage));
+      return;
+    }
+
+    appendRows(page.rows);
+    more.hidden = !page.hasMore;
+  }
+
+  sortSelect.addEventListener('change', () => {
+    load({ ascending: sortSelect.value === 'asc' });
+  });
+
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+
+    const mine = generation;
+
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.textContent = 'Loading…';
+
+    const page = await fetchPage();
+
+    if (mine !== generation) return;
+
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+
+    if (page.error) {
+      console.error(page.error);
+      button.textContent = "Couldn't load more statuses. Try again";
+      return;
+    }
+
+    button.textContent = moreLabel();
 
     if (page.rows.length > 0) appendRows(page.rows);
 
-    feedMore.hidden = !page.hasMore;
+    more.hidden = !page.hasMore;
   });
+
+  return { load };
 }
 
 // The sidebar is the same on the home page and on profile pages: the signed-in

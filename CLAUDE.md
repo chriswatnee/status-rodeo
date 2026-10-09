@@ -200,15 +200,22 @@ vertical padding. In a feed row the avatar is top-aligned (level with the name)
 while the text block is centered, so short posts look centered beside the avatar
 and long posts don't leave the avatar floating mid-row.
 
+Feeds: the home feed (everyone) and the profile feed share `createFeedPager()` in
+`src/main.js`. A "Latest first / Oldest first" dropdown sits in the panel heading
+(`sortSelectMarkup()`). Five statuses show at a time, with a "Show older" button
+("Show newer" in oldest-first order) that loads the next 5. The pager asks for 6
+to know if there are more, and pages by `created_at` past the last status shown
+(`lt` for latest first, `gt` for oldest first), not by offset. Changing the order
+reloads from the first page, and responses that arrive after the order changed
+are dropped. Posting on the home page switches back to "Latest first" so the new
+status is visible. The order is not remembered between visits.
+
 Profile page: the header card shows the avatar, display name and one muted line,
 "@username · Joined Sep 2026 · 14 statuses" (the joined month comes from
 `profiles.created_at`; the count is a second, head-only query, and is left out
 if it fails). The tab title is "Display name (@username) · Status Rodeo". The
-feed shows that user's latest 5 public statuses, with a "Show older" button
-that loads the next 5 (the page asks for 6 to know if there are more, and pages
-by `created_at` below the oldest status shown, not by offset), or "Name hasn't
-posted yet.", or "Couldn't load statuses." if the query fails. The home page
-still shows only the latest 5 across everyone. The line stays on one row so the
+feed shows that user's latest 5 public statuses, or "Name hasn't posted yet.",
+or "Couldn't load statuses." if the query fails. The line stays on one row so the
 card is only as tall as the avatar and lines up with the sidebar. An unknown
 username shows "Page not found".
 
@@ -256,4 +263,4 @@ Target:
 
 A mockup is a visual reference, not a feature list. These controls appear in it
 but are not built, and are not to be added without asking: Settings, a "Post a
-status" nav link, a users list, sort controls, per-status menus.
+status" nav link, a users list, per-status menus.
