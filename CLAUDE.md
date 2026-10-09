@@ -25,7 +25,7 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule and the posting logic in `tests/`.
+  length rule, the posting logic and the avatar letter in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -61,6 +61,9 @@ fallback. No `_redirects` file is needed.
   sign-out and the signed-in identity, with `onSession` and `onProfile` hooks (the
   home page uses them for the composer). Change the sidebar in those two
   functions, not per page.
+- `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
+  works on whole characters (grapheme clusters), so a name starting with an emoji
+  isn't cut in half. It has unit tests.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
