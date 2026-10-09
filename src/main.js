@@ -80,7 +80,7 @@ function renderHome() {
               <textarea
                 id="status-input"
                 rows="1"
-                placeholder="This ain't my first rodeo."
+                placeholder="What’s your status?"
                 aria-describedby="char-help"
               ></textarea>
               <span id="char-help" class="visually-hidden">${STATUS_LIMIT} characters maximum.</span>
