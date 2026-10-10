@@ -422,8 +422,7 @@ error message under it. The counter is in the existing muted colour. The empty b
 line from `src/placeholders.js` each time the home page is drawn (the plain "What’s your status?"
 is not one of them), never the same line twice in a row. It is only a hint: the field's label stays
 "What's your status?". Every line is capped at 28 characters so it fits on one line on a 320px
-phone (checked in the browser at 320, 360 and 390px); keep new lines Western, mainstream (well-known cowboy phrases; two nod to the film City
-Slickers), short and with the curly apostrophe. Under 640px the composer's avatar is hidden (it is
+phone (checked in the browser at 320, 360 and 390px); keep new lines Western, mainstream (well-known cowboy phrases), short and with the curly apostrophe. Under 640px the composer's avatar is hidden (it is
 already in the sidebar bar just above) and the box takes the full width. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty

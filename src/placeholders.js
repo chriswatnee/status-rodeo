@@ -20,9 +20,8 @@ export const COMPOSER_PLACEHOLDERS = [
   'Round up your thoughts…',
   'News from the Wild West?',
   'Quick on the draw?',
-  // City Slickers: Curly's "one thing"
-  'What’s your one thing today?',
-  'What’s the secret of life?',
+  'Hold your horses. Got news?',
+  'Got news for the sheriff?',
 ];
 
 // One line, never the same as `previous` (so going home twice in a row changes it).
