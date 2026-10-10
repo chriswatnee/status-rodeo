@@ -425,15 +425,20 @@ reloaded) the Post button reads "Posting…", keeps its width, is marked
 `aria-busy` and ignores further clicks; the text box is read-only until the
 insert finishes.
 
-Hat tips (Status Rodeo's "like"): every status has a "Tip your hat" pill under its
-text (`.status-actions`: the `.hat-tip` button, the `.hat-count` text and a `.hat-note`
+Hat tips (Status Rodeo's "like"): every status has a "Tip" pill under its
+text (`.status-actions`: the `.hat-tip` button, a `.hat-number` and a `.hat-note`
 message line; `.hat-note` is a `div`, not a `p`, because `.status p` is the status
 text). Signed-in visitors can tip any public status, their own included, once each;
-tapping again takes it back. Everyone sees the count ("1 hat tip", "2 hat tips"; at
-zero the count is hidden but still read by screen readers, and the button stays).
-Tipped is shown by a filled, tilted hat, the "Hat tipped" label, `aria-pressed` and the
-rust `--accent`, not by colour alone. The button is a real `<button>` (its visible
-text is its name; `aria-describedby` points at the count), has the usual focus ring,
+tapping again takes it back. Everyone sees the count as a bare number beside the button
+(`.hat-number`, `aria-hidden`; hidden at zero, and the button stays). The words "hat tip"
+are not repeated because the hat icon says them. The full wording lives in a visually hidden
+`.hat-count` ("1 hat tip", "2 hat tips"), which the button's `aria-describedby` points at.
+Tipped is shown by a filled, tilted hat, the "Tipped" label, `aria-pressed` and the
+rust `--accent`, not by colour alone. The button is a real `<button>`; its visible text is
+"Tip" / "Tipped", and its accessible name (`aria-label`) is "Tip your hat" / "Hat tipped", so
+the visible word is part of the name. Its tooltip (`title`) is "Tip your hat" / "Take back your
+hat tip". The sign-in and failure messages keep the full "tip your hat" wording. It stays
+on the row rather than moving into a per-status menu. The button has the usual focus ring,
 about 44px of tappable area through an invisible `::after` layer, a press effect, hover
 styles inside `@media (hover: hover)`, and no hat-tilt transition under
 `prefers-reduced-motion`. Don't add the iPhone swallowed-tap workaround used for "Show
