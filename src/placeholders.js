@@ -6,22 +6,23 @@
 export const PLACEHOLDER_MAX_LENGTH = 28;
 
 export const COMPOSER_PLACEHOLDERS = [
-  'What’s the news, cowpoke?',
   'Howdy, partner. What’s up?',
   'This ain’t my first rodeo…',
-  'What’s the word, pardner?',
   'Saddle up. What’s new?',
-  'Any news from the trail?',
-  'Tell it to the campfire…',
-  'What’s happenin’ out west?',
   'Yeehaw! What’s going on?',
-  'Rustle up a status…',
-  'What’s brewin’ on the range?',
-  'Spin us a yarn…',
-  'Whatcha ridin’ on today?',
-  'Tumbleweeds quiet. Say hi!',
-  'Reckon what’s on your mind?',
-  'Fixin’ to say somethin’?',
+  'What’s the news, cowpoke?',
+  'What’s the word, pardner?',
+  'Giddy up! What’s happenin’?',
+  'Back in the saddle again…',
+  'High noon. What’s up?',
+  'Well, I’ll be… what’s new?',
+  'What’s happenin’ out west?',
+  'Round up your thoughts…',
+  'News from the Wild West?',
+  'Quick on the draw?',
+  // City Slickers: Curly's "one thing"
+  'One thing. Just one thing.',
+  'Know the secret of life?',
 ];
 
 // One line, never the same as `previous` (so going home twice in a row changes it).
