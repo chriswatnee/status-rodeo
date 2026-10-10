@@ -21,8 +21,8 @@ export const COMPOSER_PLACEHOLDERS = [
   'News from the Wild West?',
   'Quick on the draw?',
   // City Slickers: Curly's "one thing"
-  'One thing. Just one thing.',
-  'Know the secret of life?',
+  'What’s your one thing today?',
+  'What’s the secret of life?',
 ];
 
 // One line, never the same as `previous` (so going home twice in a row changes it).
