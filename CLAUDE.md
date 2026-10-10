@@ -392,9 +392,11 @@ username)`), retried like the feeds. A bad id (see `src/status-id.js`) makes no 
 and shows "Page not found"; so does a status that is missing or not public (private ones
 are hidden by RLS and by the explicit `visibility = 'public'` filter). A failed request
 is not "Page not found": it shows "Couldn't load this status." with a "Try again"
-button. The tab title is "Status by Display name (@username) · Status Rodeo". Nothing in the
-interface links to it yet; links to it are intercepted like other app pages. A trailing
-slash is accepted.
+button. The tab title is "Status by Display name (@username) · Status Rodeo". The time on
+every status row (`a.status-time` around the `<time>`, built in `createStatusRow()`) is the
+link to it, so a visitor can open it, copy its address or open it in a new tab; plain
+clicks navigate in the app, modified clicks are left to the browser. A trailing slash is
+accepted.
 
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with
@@ -476,7 +478,9 @@ Target:
   readable type for statuses and controls. Self-host any font.
 - Sidebar: account identity and navigation. Main column: composer and feed. Feed
   rows are simple (avatar, name, time, text), with no decoration on individual
-  statuses.
+  statuses. The time is a link to the status's own page but looks exactly like the plain
+  muted time (same colour, size and position; the "· " dot is drawn on the link so only
+  the time is underlined, and only on hover, inside the hover media query).
 - Avatars are illustrated image assets named by username (for example
   `/avatars/<username>.webp`), chosen over a database column for now. Changing an
   avatar or the interface must never require changing the masthead.

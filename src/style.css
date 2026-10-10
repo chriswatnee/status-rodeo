@@ -969,8 +969,24 @@ textarea:focus-visible {
   font-size: 0.95rem;
 }
 
-.status-meta time::before {
+/* The time links to the status's own page. It looks like the plain time (muted, no
+   underline); the dot sits on the link, outside the time, so only the time is
+   underlined on hover. */
+.status-time {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.status-meta > time::before,
+.status-time::before {
   content: '· ';
+}
+
+@media (hover: hover) {
+  .status-time:hover time {
+    text-decoration: underline;
+  }
 }
 
 .status p {
