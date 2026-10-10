@@ -85,7 +85,9 @@
     ),
     var(--page-texture);
   background-size: auto, var(--wood-tile) var(--wood-tile);
-  background-repeat: no-repeat, repeat;
+  /* Both layers repeat: the page background is only as tall as the content, and a
+     non-repeating veil would stop there, leaving full-strength grain below it. */
+  background-repeat: repeat, repeat;
 }
 
 @media (max-width: 639px) {
