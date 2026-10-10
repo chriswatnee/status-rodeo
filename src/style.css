@@ -432,6 +432,15 @@ textarea:focus-visible {
   margin-top: 0.3rem;
 }
 
+.login-error {
+  margin: 0.2rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-small);
+  background: var(--warn-tint);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
 .auth-info {
   margin: 1rem 0 0;
   padding-top: 0.9rem;
@@ -506,6 +515,7 @@ textarea:focus-visible {
   }
 }
 
+.login button[aria-busy='true'],
 .composer button[aria-busy='true'] {
   padding-inline: 0.5rem;
   cursor: progress;

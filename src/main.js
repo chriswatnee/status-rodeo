@@ -788,15 +788,19 @@ function sidebarMarkup() {
             <button type="button">Try again</button>
           </p>
 
-          <section id="login" class="login" hidden>
+          <form id="login" class="login" novalidate hidden>
             <label for="email-input">Email</label>
-            <input id="email-input" type="email" />
+            <input id="email-input" name="email" type="email"
+              autocomplete="username" autocapitalize="none" spellcheck="false" />
 
             <label for="password-input">Password</label>
-            <input id="password-input" type="password" />
+            <input id="password-input" name="password" type="password"
+              autocomplete="current-password" />
 
-            <button type="button">${iconMarkup('sign-in')}Sign in</button>
-          </section>
+            <p id="login-error" class="login-error" role="alert" hidden></p>
+
+            <button type="submit">${iconMarkup('sign-in')}Sign in</button>
+          </form>
 
           <nav class="site-nav">
             <a href="/">${iconMarkup('home')}Home</a>
@@ -834,6 +838,7 @@ function initSidebar() {
   const emailInput = document.querySelector('#email-input');
   const passwordInput = document.querySelector('#password-input');
   const signInButton = document.querySelector('.login button');
+  const loginError = document.querySelector('#login-error');
 
   async function loadProfile(userId) {
     profileErrorNote.hidden = true;
@@ -912,17 +917,62 @@ function initSidebar() {
     }
   }
 
-  async function signIn() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: emailInput.value,
-      password: passwordInput.value,
-    });
+  let signingIn = false;
 
-    if (error) {
-      console.error(error);
+  async function signIn(event) {
+    event.preventDefault();
+    if (signingIn) return;
+
+    if (!emailInput.value.trim() || !passwordInput.value) {
+      setErrorNote(loginError, 'Enter your email and password.');
+      loginError.hidden = false;
+      (emailInput.value.trim() ? passwordInput : emailInput).focus();
       return;
     }
 
+    loginError.hidden = true;
+    signingIn = true;
+    const label = signInButton.innerHTML;
+    signInButton.style.minWidth = `${signInButton.offsetWidth}px`;
+    signInButton.setAttribute('aria-busy', 'true');
+    signInButton.textContent = 'Signing in…';
+
+    let result;
+    try {
+      result = await supabase.auth.signInWithPassword({
+        email: emailInput.value.trim(),
+        password: passwordInput.value,
+      });
+    } catch (error) {
+      result = { error };
+    }
+
+    signingIn = false;
+    signInButton.innerHTML = label;
+    signInButton.style.minWidth = '';
+    signInButton.removeAttribute('aria-busy');
+
+    const { data, error } = result;
+
+    if (error) {
+      console.error(error);
+      // 400 means the server rejected the credentials; anything else
+      // (no status, 5xx, 429) is not the visitor's typing.
+      const rejected = error.status === 400 || error.status === 401;
+      setErrorNote(
+        loginError,
+        rejected
+          ? 'Wrong email or password.'
+          : "Couldn't sign in. Check your connection and try again."
+      );
+      loginError.hidden = false;
+      if (rejected) {
+        passwordInput.select();
+      }
+      return;
+    }
+
+    passwordInput.value = '';
     updateAuthUI(data.session);
   }
 
@@ -936,6 +986,7 @@ function initSidebar() {
 
     emailInput.value = '';
     passwordInput.value = '';
+    loginError.hidden = true;
     updateAuthUI(null);
   }
 
@@ -955,7 +1006,7 @@ function initSidebar() {
     if (currentSession) loadProfile(currentSession.user.id);
   });
 
-  signInButton.addEventListener('click', signIn);
+  loginSection.addEventListener('submit', signIn);
   signOutButton.addEventListener('click', signOut);
 
   loadSession();

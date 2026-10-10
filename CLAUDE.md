@@ -305,6 +305,16 @@ reloaded) the Post button reads "Posting…", keeps its width, is marked
 `aria-busy` and ignores further clicks; the text box is read-only until the
 insert finishes.
 
+Sign-in: the sidebar form is a real `<form id="login" novalidate>` (Enter submits;
+email `autocomplete="username"`, password `current-password`, so password managers
+fill it). Empty fields show "Enter your email and password." without a request.
+While signing in the button reads "Signing in…", keeps its width, is `aria-busy` and
+ignores further submits. A rejected login (HTTP 400/401) shows "Wrong email or
+password." and selects the password; anything else (network error, 5xx) shows "Couldn't
+sign in. Check your connection and try again." The message is `#login-error`
+(`role="alert"`, same tint as other failure messages) and is cleared on the next
+attempt and on sign-out. The email is kept, the password is cleared on success.
+
 Failed loads: the profile lookup behind the sidebar identity and the feed queries
 are retried twice (after 1 s, then 3 s, `withRetry()` in `src/main.js`, logged
 with `console.warn`). If every attempt fails, the sidebar shows "Couldn't load
