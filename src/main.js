@@ -9,6 +9,7 @@ import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
 import { parseStatusId } from './status-id.js';
 import { linkify } from './linkify.js';
+import { pickPlaceholder } from './placeholders.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -270,6 +271,9 @@ function updateNav() {
   }
 }
 
+// The composer hint is a random line from src/placeholders.js, different from the last one.
+let lastPlaceholder = null;
+
 function renderHome() {
   document.title = 'Status Rodeo';
   mount(`
@@ -280,7 +284,6 @@ function renderHome() {
               <textarea
                 id="status-input"
                 rows="1"
-                placeholder="What’s your status?"
                 aria-describedby="char-help"
               ></textarea>
               <span id="char-help" class="visually-hidden">${STATUS_LIMIT} characters maximum.</span>
@@ -308,6 +311,8 @@ function renderHome() {
   const composer = document.querySelector('.composer');
   const composerAvatar = document.querySelector('#composer-avatar');
   const statusInput = document.querySelector('#status-input');
+  lastPlaceholder = pickPlaceholder(lastPlaceholder);
+  statusInput.placeholder = lastPlaceholder;
   const postButton = document.querySelector('.composer button');
   const charCount = document.querySelector('#char-count');
   const composerNote = document.querySelector('#composer-note');

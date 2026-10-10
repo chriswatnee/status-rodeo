@@ -26,7 +26,7 @@ with two users.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
   length rule, the posting logic, the avatar letter, the hat tips logic, the status id
-  parser, link detection and the RSS feeds in `tests/`.
+  parser, link detection, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -86,6 +86,9 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   not part of the link and a closing bracket is only kept if the address opened one; an
   address with a username or password, or a host without a dot, stays plain text. The
   page builds the nodes in `fillStatusText()` (`src/main.js`, used by `createStatusRow()`).
+- `src/placeholders.js` is the list of Western-flavoured placeholder lines for the composer and
+  `pickPlaceholder()`, which chooses one at random and never the same as the last one (unit
+  tested, including a length cap). `renderHome()` sets the textarea's `placeholder` from it.
 - `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
   works on whole characters (grapheme clusters), so a name starting with an emoji
   isn't cut in half. It has unit tests.
@@ -415,7 +418,12 @@ addresses that start with `http://` or `https://`. RSS descriptions stay plain t
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with
 the live `0/280` counter at the left and the Post button at the right, and any
-error message under it. The counter is in the existing muted colour. Under 640px the composer's avatar is hidden (it is
+error message under it. The counter is in the existing muted colour. The empty box's placeholder is a random
+line from `src/placeholders.js` each time the home page is drawn ("What’s your status?" is one
+of them), never the same line twice in a row. It is only a hint: the field's label stays
+"What's your status?". Every line is capped at 28 characters so it fits on one line on a 320px
+phone (checked in the browser at 320, 360 and 390px); keep new lines Western, short and with the
+curly apostrophe. Under 640px the composer's avatar is hidden (it is
 already in the sidebar bar just above) and the box takes the full width. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty
