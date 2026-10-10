@@ -61,11 +61,31 @@
   --inset: 1.3rem; /* side padding inside a panel */
   --inset-y: 0.85rem; /* top and bottom padding inside a panel */
 
+  /*
+    Wood texture experiment (page background only). A faint, seamlessly tiling
+    wood grain sits on the tan page colour. To restore the flat background, set
+    --page-texture to none (or delete this block and the background-image below).
+    --wood-veil is how much of the flat tan is laid over the grain: higher is
+    fainter, 100% is flat. The tile is 1024px drawn at 512px so it stays crisp on
+    high-density screens.
+  */
+  --page-texture: url('/textures/wood-grain.webp');
+  --wood-veil: 60%;
+  --wood-tile: 512px;
+
   font-family: var(--font-body);
   font-size: clamp(100%, 1.3vw, 131%);
   line-height: 1.4;
   color: var(--text);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--bg) var(--wood-veil), transparent),
+      color-mix(in srgb, var(--bg) var(--wood-veil), transparent)
+    ),
+    var(--page-texture);
+  background-size: auto, var(--wood-tile) var(--wood-tile);
+  background-repeat: no-repeat, repeat;
 }
 
 @media (max-width: 639px) {

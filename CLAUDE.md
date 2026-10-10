@@ -234,6 +234,20 @@ the same artwork (cowboy, horse, dog and the sign, from x 614 to 2150 of the
 the side padding, the composer's avatar column and a few font sizes tighten so the
 composer placeholder fits on one line and the "Latest first" dropdown isn't clipped.
 
+Page texture (experiment): the tan page background carries a faint wood grain,
+`public/textures/wood-grain.webp` (1024x1024 lossy WebP, ~65 KB, drawn at 512px so it
+is crisp on high-density screens). It is a seamless tile: the source image had a
+visible left/right seam, which was cross-faded away before encoding, and its mean
+colour was shifted to `--bg` so the page colour does not change. Lossy WebP adds a
+small error at a tile's edge, so re-check the seams (compare the pixel difference
+across the tile edge with the difference between ordinary neighbouring columns)
+whenever the image is re-encoded, and resize it from a wrapped copy, never plain.
+It lives in `:root` in `src/style.css`: `--page-texture` (the image, `none` restores
+the flat background), `--wood-veil` (how much flat tan is laid over the grain, 60%;
+higher is fainter, 100% is flat) and `--wood-tile` (512px). Only the page background
+uses it; the masthead, panels and text are unchanged. `color-mix()` is needed for the
+veil; a browser without it drops the declaration and shows the flat tan.
+
 Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.9rem, between panels in both directions and under the masthead), `--inset`
 (1.3rem, side padding inside every panel, feed rows included) and `--inset-y`
