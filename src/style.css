@@ -43,6 +43,9 @@
   --avatar-border: #3a2414;
   --warn: #a2391a;
   --warn-tint: #f8e1d6;
+  /* The rust used for "on" states (a tipped hat, the low-characters counter). */
+  --accent: var(--warn);
+  --accent-tint: var(--warn-tint);
 
   --radius: 0.6rem;
   --radius-small: 0.4rem;
@@ -974,6 +977,120 @@ textarea:focus-visible {
   margin: 0.1rem 0 0;
   font-size: 1.05rem;
   overflow-wrap: anywhere;
+}
+
+/* Hat tips: a quiet pill under the status text. Tipped is shown by the filled,
+   tilted hat and the "Hat tipped" label as well as the rust colour. */
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+  margin-top: 0.3rem;
+}
+
+/* Until the counts arrive the row keeps its space, so nothing jumps; if they never
+   arrive (the feed still works) there is no button. */
+.status-actions[data-state='loading'] {
+  visibility: hidden;
+}
+
+.status-actions[data-state='unavailable'] {
+  display: none;
+}
+
+.hat-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.18rem 0.7rem 0.18rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+}
+
+/* The pill is small; this invisible layer makes the tappable area about 44px tall
+   and keeps it that size while the button is pressed (see the other buttons). */
+.hat-tip::after {
+  content: '';
+  position: absolute;
+  inset: -0.45rem -0.2rem;
+}
+
+.hat-tip .icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: inherit;
+  transition: transform 0.18s ease-out;
+}
+
+.hat-tip:active:not([aria-busy='true']) {
+  transform: scale(0.96);
+}
+
+.hat-tip[aria-busy='true'] {
+  cursor: progress;
+}
+
+.hat-tip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.hat-tip[aria-pressed='true'] .icon {
+  transform: rotate(-14deg);
+}
+
+.hat-tip[aria-pressed='true'] .icon svg path:first-child {
+  fill-opacity: 0.85;
+}
+
+@media (hover: hover) {
+  .hat-tip:hover {
+    border-color: var(--muted);
+    color: var(--heading);
+  }
+
+  .hat-tip[aria-pressed='true']:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.hat-count {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.hat-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.hat-note:empty {
+  display: none;
+}
+
+.hat-note:has(.icon-error) {
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-small);
+  background: var(--warn-tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hat-tip,
+  .hat-tip .icon {
+    transition: none;
+  }
 }
 
 /* Wide layout: narrow sidebar beside a much larger main column */

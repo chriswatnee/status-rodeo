@@ -25,7 +25,7 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic and the avatar letter in `tests/`.
+  length rule, the posting logic, the avatar letter and the hat tips logic in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -81,6 +81,12 @@ fallback. No `_redirects` file is needed.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
+- `src/hat-tips.js` is the Hat Tips logic (no DOM, unit tested): `fetchHatTipInfo()`
+  (one `hat_tip_info` request for counts and "is it mine" for a list of status ids),
+  `setHatTip()` (insert or delete, idempotent, tells an expired session from other
+  failures) and `createHatTipStore()` (what every button shows, keyed by status id;
+  optimistic update with rollback, one save at a time per status). The button is built
+  by `createHatTipActions()` in `src/main.js`; see "Hat tips" under Design direction.
 - API handlers live in `functions/api/`.
 - The folder `functions/api/users/[username]/` must be named with literal square
   brackets. With any other name, `params.username` is undefined.
@@ -131,6 +137,21 @@ Other facts:
   provisioned by hand, so creating an Auth user alone does not give a working
   account.
 
+Hat tips (migration prepared, NOT yet confirmed in production): `supabase/hat-tips.sql`
+creates `hat_tips (status_id, user_id, created_at)` with primary key
+`(status_id, user_id)`, foreign keys to `statuses(id)` and `auth.users(id)` both
+`ON DELETE CASCADE`, RLS with select/insert/delete policies on the caller's own rows
+(insert also requires a public status), table privileges for `authenticated` only
+(select, insert, delete; none for `anon`), and `hat_tip_info(bigint[])`, a `SECURITY
+DEFINER` function with an empty `search_path`, executable by `anon` and
+`authenticated`, that returns counts and the caller's own tipped flag for up to 100
+public statuses and never user ids. Production database changes are applied by hand
+(by Muse), then checked with `supabase/hat-tips-verify.sql` (every row must say
+`ok = true`; it changes nothing permanently). Until that has been done the live
+database has no `hat_tips` table, and the app then shows no hat tip buttons. Once it is
+applied and verified, move this into the sections here and into `supabase/schema.sql`
+and update the date they were checked.
+
 Row Level Security is enabled on both tables. Policies:
 - "Public statuses are viewable": `statuses` select, role `public`, using
   `visibility = 'public'`
@@ -166,22 +187,24 @@ redirect URLs are configured.
   `text-size-adjust`, `margin: 0` on form controls) and is not a full reset:
   everything else uses browser defaults, so set margins explicitly on elements
   you rely on.
-- Icons: the Status Rodeo icon family is 25 hand-drawn 24x24 SVGs in `src/icons/`
+- Icons: the Status Rodeo icon family is 26 hand-drawn 24x24 SVGs in `src/icons/`
   (one file each, kebab-case names: home, profile, users, search, notifications,
   settings, sign-out, sign-in, edit-profile, pencil, delete, reply, like, share,
   copy-link, more, refresh, history, success, warning, error, info, close, back,
-  external-link). They are drawn with `currentColor`, a 1.8 stroke, round caps and
+  external-link, hat-tip). They are drawn with `currentColor`, a 1.8 stroke, round caps and
   joins, and a soft 18% fill in the same colour; no gradients. Only icons imported
   in `src/icons.js` are bundled (Vite `?raw`), so add an import and an entry when
   you first use one. `iconMarkup(name)` returns the decorative markup
   (`<span class="icon" aria-hidden="true">`), for use beside text that already
   names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
   used only beside labels of things that already work: the nav items (home,
-  profile), Post (pencil), Sign in, Sign out and failure messages (error, via
+  profile), Post (pencil), Sign in, Sign out, the Tip your hat button (hat-tip) and
+  failure messages (error, via
   `setErrorNote()` and the `icon-error` class, which uses the warning colour).
   "Try again" is a plain link without an icon. Icons inside buttons take the
   button's text colour. Don't add links, features or per-status icons (like,
-  reply, share, menu) just because an icon exists. Sign out is styled like a nav
+  reply, share, menu) just because an icon exists; the hat tip is the only per-status
+  control, and the heart (`like`) stays unused. Sign out is styled like a nav
   item (under a small "Signed in" label; on phones only the button shows and the
   label is read out, not displayed), and failure messages get a soft tint
   (`--warn-tint`). Post and Sign in use 1.2rem side padding. The `pencil` icon serves both new status
@@ -320,6 +343,32 @@ short message under the buttons. While a post is in flight (until the feed has
 reloaded) the Post button reads "Posting…", keeps its width, is marked
 `aria-busy` and ignores further clicks; the text box is read-only until the
 insert finishes.
+
+Hat tips (Status Rodeo's "like"): every status has a "Tip your hat" pill under its
+text (`.status-actions`: the `.hat-tip` button, the `.hat-count` text and a `.hat-note`
+message line; `.hat-note` is a `div`, not a `p`, because `.status p` is the status
+text). Signed-in visitors can tip any public status, their own included, once each;
+tapping again takes it back. Everyone sees the count ("1 hat tip", "2 hat tips"; at
+zero the count is hidden but still read by screen readers, and the button stays).
+Tipped is shown by a filled, tilted hat, the "Hat tipped" label, `aria-pressed` and the
+rust `--accent`, not by colour alone. The button is a real `<button>` (its visible
+text is its name; `aria-describedby` points at the count), has the usual focus ring,
+about 44px of tappable area through an invisible `::after` layer, a press effect, hover
+styles inside `@media (hover: hover)`, and no hat-tilt transition under
+`prefers-reduced-motion`. Don't add the iPhone swallowed-tap workaround used for "Show
+older" to this button: it could toggle a tip by accident when someone taps to stop a
+scroll. Data: each page of statuses makes one `hat_tip_info` request (the pager calls
+`loadHatTips()` after drawing its rows); until it answers, the row keeps its space
+(`data-state="loading"`, invisible, same height as the finished button), and if it fails
+after the usual retries the rows have no button (`data-state="unavailable"`) while the
+feed works as before. A tap changes the count at once and puts it back, with "Couldn't
+save your hat tip. Try again.", if the save fails; further taps on a status are ignored
+while its save is in flight. Signed out, tapping shows "Sign in to tip your hat." and
+sends nothing. If a save finds the login gone, the visitor is signed out locally
+(`expireSession()`) and told "Your session expired. Sign in again to tip your hat."
+Signing in or out updates the buttons already on the page (`syncHatTips()`). Counts are
+read when a page of statuses loads and are not refreshed live. The same status shows the
+same state on the home and profile feeds because both read `hatTips`.
 
 Sign-in: the sidebar form is a real `<form id="login" novalidate>` (Enter submits;
 email `autocomplete="username"`, password `current-password`, so password managers
