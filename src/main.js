@@ -1295,7 +1295,7 @@ function createStatusRow({ id, username, displayName, content, createdAt }) {
   return article;
 }
 
-// Hat tips. Every status has a "Tip your hat" button and its count. What they show
+// Hat tips. Every status has a "Tip" button (named "Tip your hat") and its count. What they show
 // lives in `hatTips` (hat-tips.js), so the same status reads the same wherever it is
 // on the page, and a tap changes the count at once and is undone if the save fails.
 // Signed-out visitors see the counts; the button tells them to sign in.
@@ -1307,8 +1307,15 @@ function createHatTipActions(statusId) {
   actions.dataset.hatStatus = String(statusId);
   actions.dataset.state = 'loading'; // keeps its space, invisible, until the counts arrive
 
+  // What is drawn beside the button is just the number. The full wording ("2 hat tips")
+  // is in `.hat-count`, which only screen readers see; the button describes itself with it.
+  const number = document.createElement('span');
+  number.className = 'hat-number';
+  number.setAttribute('aria-hidden', 'true');
+  number.hidden = true;
+
   const count = document.createElement('span');
-  count.className = 'hat-count';
+  count.className = 'hat-count visually-hidden';
   count.id = `hat-count-${++hatTipSerial}`;
 
   const button = document.createElement('button');
@@ -1316,15 +1323,18 @@ function createHatTipActions(statusId) {
   button.className = 'hat-tip';
   button.setAttribute('aria-describedby', count.id);
   // Static markup. The label is there from the start, so the space reserved while the
-  // counts load is exactly the size of the finished button.
-  button.innerHTML = `${iconMarkup('hat-tip')}<span class="hat-tip-label">Tip your hat</span>`;
+  // counts load is the height of the finished button. The visible word is short because
+  // the hat icon says the rest; the full phrase is the button's name and tooltip.
+  button.innerHTML = `${iconMarkup('hat-tip')}<span class="hat-tip-label">Tip</span>`;
+  button.setAttribute('aria-label', 'Tip your hat');
+  button.title = 'Tip your hat';
 
   // A live region, so a message that appears under the button is read out.
   const note = document.createElement('div'); // not a <p>: `.status p` is the status text
   note.className = 'hat-note';
   note.setAttribute('role', 'status');
 
-  actions.append(button, count, note);
+  actions.append(button, number, count, note);
   button.addEventListener('click', () => tipHat(statusId, actions));
 
   renderHatTipActions(actions);
@@ -1339,10 +1349,13 @@ function renderHatTipActions(actions) {
 
   const button = actions.querySelector('.hat-tip');
   const count = actions.querySelector('.hat-count');
+  const number = actions.querySelector('.hat-number');
 
   actions.dataset.state = 'ready';
   button.setAttribute('aria-pressed', String(info.tipped));
-  button.querySelector('.hat-tip-label').textContent = info.tipped ? 'Hat tipped' : 'Tip your hat';
+  button.setAttribute('aria-label', info.tipped ? 'Hat tipped' : 'Tip your hat');
+  button.title = info.tipped ? 'Take back your hat tip' : 'Tip your hat';
+  button.querySelector('.hat-tip-label').textContent = info.tipped ? 'Tipped' : 'Tip';
 
   if (info.pending) {
     button.setAttribute('aria-busy', 'true');
@@ -1350,9 +1363,10 @@ function renderHatTipActions(actions) {
     button.removeAttribute('aria-busy');
   }
 
-  // With no tips the count is not drawn, but it is still there for screen readers.
+  // With no tips no number is drawn, but the count is still there for screen readers.
   count.textContent = hatTipCountText(info.count);
-  count.classList.toggle('visually-hidden', info.count === 0);
+  number.textContent = String(info.count);
+  number.hidden = info.count === 0;
 }
 
 function renderHatTips(statusIds) {

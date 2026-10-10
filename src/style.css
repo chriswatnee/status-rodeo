@@ -1081,7 +1081,7 @@ textarea:focus-visible {
   }
 }
 
-.hat-count {
+.hat-number {
   color: var(--muted);
   font-size: 0.95rem;
 }
