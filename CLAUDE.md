@@ -26,7 +26,7 @@ with two users.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
   length rule, the posting logic, the avatar letter, the hat tips logic, the status id
-  parser and the RSS feeds in `tests/`.
+  parser, link detection and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -81,6 +81,11 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 - `src/status-id.js` parses the id in `/statuses/<id>` (plain positive whole numbers, no
   leading zeros, at most 15 digits; anything else is null and the page is not-found
   without a request). It has unit tests.
+- `src/linkify.js` finds web addresses in a status (plain text in, parts out, never HTML; unit
+  tested). Only `http://` and `https://` addresses count; sentence punctuation at the end is
+  not part of the link and a closing bracket is only kept if the address opened one; an
+  address with a username or password, or a host without a dot, stays plain text. The
+  page builds the nodes in `fillStatusText()` (`src/main.js`, used by `createStatusRow()`).
 - `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
   works on whole characters (grapheme clusters), so a name starting with an emoji
   isn't cut in half. It has unit tests.
@@ -397,6 +402,15 @@ every status row (`a.status-time` around the `<time>`, built in `createStatusRow
 link to it, so a visitor can open it, copy its address or open it in a new tab; plain
 clicks navigate in the app, modified clicks are left to the browser. A trailing slash is
 accepted.
+
+Links in statuses: a web address in a status is a link (`a.status-link`, the normal link
+blue, underlined) on every page that shows statuses. The shown text is the address exactly
+as typed, so the text and the destination always agree. A link to another site opens in a
+new tab with `rel="noopener noreferrer nofollow ugc"` and an `aria-label` ending "(opens
+in a new tab)" (the visible text, and so copy and paste, is unchanged); a link to this site
+has no target and is followed inside the app. A status with no address is still one plain
+text node. Bare domains ("example.com", "www.…") are deliberately not linked: only
+addresses that start with `http://` or `https://`. RSS descriptions stay plain text.
 
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with
