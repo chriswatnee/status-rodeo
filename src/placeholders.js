@@ -12,16 +12,16 @@ export const COMPOSER_PLACEHOLDERS = [
   'Yeehaw! What’s going on?',
   'What’s the news, cowpoke?',
   'What’s the word, pardner?',
-  'Giddy up! What’s happenin’?',
   'Back in the saddle again…',
-  'High noon. What’s up?',
-  'Well, I’ll be… what’s new?',
   'What’s happenin’ out west?',
   'Round up your thoughts…',
-  'News from the Wild West?',
-  'Quick on the draw?',
-  'Hold your horses. Got news?',
-  'Got news for the sheriff?',
+  'Well, howdy there…',
+  'Howdy, stranger…',
+  'Anything to report, partner?',
+  'What’s the talk in town?',
+  'Tell us what’s goin’ on…',
+  'Spill it, pardner…',
+  'How’s the trail treatin’ ya?',
 ];
 
 // One line, never the same as `previous` (so going home twice in a row changes it).
