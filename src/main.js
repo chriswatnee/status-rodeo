@@ -1232,7 +1232,19 @@ function createStatusRow({ id, username, displayName, content, createdAt }) {
 
   const meta = document.createElement('div');
   meta.className = 'status-meta';
-  meta.append(name, createTimeElement(createdAt));
+  const time = createTimeElement(createdAt);
+
+  // The time is the link to this status's own page, like the timestamp on other
+  // social sites. It stays a plain, muted time (see .status-time).
+  if (id !== undefined) {
+    const permalink = document.createElement('a');
+    permalink.className = 'status-time';
+    permalink.href = `/statuses/${id}`;
+    permalink.append(time);
+    meta.append(name, permalink);
+  } else {
+    meta.append(name, time);
+  }
 
   const paragraph = document.createElement('p');
   paragraph.textContent = content;
