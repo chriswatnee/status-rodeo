@@ -1,0 +1,34 @@
+// Placeholder lines for the composer, one picked at random each time the home page is
+// drawn. They are only a hint in an empty box: the field's real label stays "What's your
+// status?" (see renderHome), so a screen reader never depends on which line was chosen.
+// Keep every line short: on a 360px phone the placeholder must fit on one line (the
+// unit test caps the length).
+export const PLACEHOLDER_MAX_LENGTH = 28;
+
+export const COMPOSER_PLACEHOLDERS = [
+  'What’s your status?',
+  'Howdy, partner. What’s up?',
+  'This ain’t my first rodeo…',
+  'What’s the word, pardner?',
+  'Saddle up. What’s new?',
+  'Any news from the trail?',
+  'Tell it to the campfire…',
+  'What’s happenin’ out west?',
+  'Yeehaw! What’s going on?',
+  'Rustle up a status…',
+  'What’s brewin’ on the range?',
+  'Lasso a thought…',
+  'Whatcha ridin’ on today?',
+  'Tumbleweeds quiet. Say hi!',
+  'Reckon what’s on your mind?',
+  'Fixin’ to say somethin’?',
+];
+
+// One line, never the same as `previous` (so going home twice in a row changes it).
+// `random` is Math.random in the app; it is a parameter so the tests are exact.
+export function pickPlaceholder(previous = null, random = Math.random, lines = COMPOSER_PLACEHOLDERS) {
+  const choices = lines.length > 1 ? lines.filter((line) => line !== previous) : lines;
+  const index = Math.min(choices.length - 1, Math.floor(random() * choices.length));
+
+  return choices[index];
+}
