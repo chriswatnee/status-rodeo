@@ -110,6 +110,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* The page background is drawn against this element, so it is never shorter than
+     the screen, even when a page has little content. */
+  min-height: 100%;
 }
 
 body {

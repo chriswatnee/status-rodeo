@@ -247,7 +247,7 @@ the flat background), `--wood-veil` (how much flat tan is laid over the grain, 6
 higher is fainter, 100% is flat) and `--wood-tile` (512px). Only the page background
 uses it; the masthead, panels and text are unchanged. Both background layers must keep `repeat`: the page background is only
 as tall as the content, so a non-repeating veil stops there and the grain below it shows at
-full strength (this was a bug in the first version). `color-mix()` is needed for the
+full strength (this was a bug in the first version). `html` also has `min-height: 100%` so the background is at least as tall as the screen on short pages. `color-mix()` is needed for the
 veil; a browser without it drops the declaration and shows the flat tan.
 
 Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
