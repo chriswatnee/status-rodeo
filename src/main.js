@@ -8,6 +8,7 @@ import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
 import { parseStatusId } from './status-id.js';
+import { linkify } from './linkify.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -1221,6 +1222,40 @@ function createFeedMessage(text) {
   return message;
 }
 
+// The text of a status. Web addresses (http:// and https:// only, see linkify.js) become
+// links; everything else is text. Nothing from a status is ever parsed as HTML: the
+// parts become text nodes and link elements built here, and a link's shown text is the
+// address exactly as typed. A link to another site opens in a new tab and carries
+// noopener, noreferrer, nofollow and ugc; a link to this site is followed in the app
+// like any other app link (the click handler picks up app pages).
+function fillStatusText(element, content) {
+  const parts = linkify(content);
+
+  if (parts.length === 1 && parts[0].type === 'text') {
+    element.textContent = content;
+    return;
+  }
+
+  element.replaceChildren(
+    ...parts.map((part) => {
+      if (part.type === 'text') return document.createTextNode(part.text);
+
+      const link = document.createElement('a');
+      link.className = 'status-link';
+      link.href = part.href;
+      link.textContent = part.text;
+
+      if (new URL(part.href).origin !== window.location.origin) {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer nofollow ugc';
+        link.setAttribute('aria-label', `${part.text} (opens in a new tab)`);
+      }
+
+      return link;
+    })
+  );
+}
+
 function createStatusRow({ id, username, displayName, content, createdAt }) {
   const article = document.createElement('article');
   article.className = 'status';
@@ -1247,7 +1282,7 @@ function createStatusRow({ id, username, displayName, content, createdAt }) {
   }
 
   const paragraph = document.createElement('p');
-  paragraph.textContent = content;
+  fillStatusText(paragraph, content);
 
   const body = document.createElement('div');
   body.className = 'status-body';
