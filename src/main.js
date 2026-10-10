@@ -6,6 +6,7 @@ import { readSortOrder, saveSortOrder } from './sort-order.js';
 import { avatarLetter } from './avatar-letter.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
+import { createHatTipStore, hatTipCountText } from './hat-tips.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -94,6 +95,10 @@ let authKnown = false;
 let currentSession = null;
 // undefined until the signed-in user's profile loads; null if it failed.
 let currentProfile;
+// What the hat tip buttons show, shared by every status on the page (see hat-tips.js).
+const hatTips = createHatTipStore(supabase);
+// Ends the signed-in state without asking the server; set by initSidebar().
+let expireSession = async () => {};
 
 // `moved` is true when the visitor navigated (not the first load), so the new
 // page is announced and focus is moved into it.
@@ -474,6 +479,7 @@ function renderHome() {
       )
     `,
     toRow: (status) => ({
+      id: status.id,
       username: status.profiles.username,
       displayName: status.profiles.display_name,
       content: status.content,
@@ -560,9 +566,10 @@ async function renderUserPage(username, isCurrent) {
     more: feedMore,
     sortSelect: document.querySelector('.sort-select'),
     title: document.querySelector('.panel-title'),
-    select: 'content, created_at',
+    select: 'id, content, created_at',
     filter: (query) => query.eq('user_id', profile.user_id),
     toRow: (status) => ({
+      id: status.id,
       username: profile.username,
       displayName: profile.display_name,
       content: status.content,
@@ -645,6 +652,8 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     });
 
     cursor = rows[rows.length - 1].created_at;
+
+    loadHatTips(rows.map((status) => status.id));
   }
 
   function moreLabel() {
@@ -891,6 +900,7 @@ function initSidebar() {
     if (!session) currentProfile = undefined;
 
     pageHooks.onSession?.(session);
+    syncHatTips(session);
 
     if (session) {
       loginSection.hidden = true;
@@ -989,6 +999,19 @@ function initSidebar() {
     loginError.hidden = true;
     updateAuthUI(null);
   }
+
+  // A hat tip save found the login no longer valid: sign out here without asking the
+  // server (which may not be reachable or may no longer know the session).
+  expireSession = async () => {
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.error(error);
+    }
+
+    passwordInput.value = '';
+    updateAuthUI(null);
+  };
 
   async function loadSession() {
     const { data, error } = await supabase.auth.getSession();
@@ -1109,7 +1132,7 @@ function createFeedMessage(text) {
   return message;
 }
 
-function createStatusRow({ username, displayName, content, createdAt }) {
+function createStatusRow({ id, username, displayName, content, createdAt }) {
   const article = document.createElement('article');
   article.className = 'status';
 
@@ -1129,9 +1152,165 @@ function createStatusRow({ username, displayName, content, createdAt }) {
   body.className = 'status-body';
   body.append(meta, paragraph);
 
+  if (id !== undefined) body.append(createHatTipActions(id));
+
   article.append(createAvatar(username, displayName), body);
 
   return article;
+}
+
+// Hat tips. Every status has a "Tip your hat" button and its count. What they show
+// lives in `hatTips` (hat-tips.js), so the same status reads the same wherever it is
+// on the page, and a tap changes the count at once and is undone if the save fails.
+// Signed-out visitors see the counts; the button tells them to sign in.
+let hatTipSerial = 0;
+
+function createHatTipActions(statusId) {
+  const actions = document.createElement('div');
+  actions.className = 'status-actions';
+  actions.dataset.hatStatus = String(statusId);
+  actions.dataset.state = 'loading'; // keeps its space, invisible, until the counts arrive
+
+  const count = document.createElement('span');
+  count.className = 'hat-count';
+  count.id = `hat-count-${++hatTipSerial}`;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'hat-tip';
+  button.setAttribute('aria-describedby', count.id);
+  // Static markup. The label is there from the start, so the space reserved while the
+  // counts load is exactly the size of the finished button.
+  button.innerHTML = `${iconMarkup('hat-tip')}<span class="hat-tip-label">Tip your hat</span>`;
+
+  // A live region, so a message that appears under the button is read out.
+  const note = document.createElement('div'); // not a <p>: `.status p` is the status text
+  note.className = 'hat-note';
+  note.setAttribute('role', 'status');
+
+  actions.append(button, count, note);
+  button.addEventListener('click', () => tipHat(statusId, actions));
+
+  renderHatTipActions(actions);
+
+  return actions;
+}
+
+function renderHatTipActions(actions) {
+  const info = hatTips.get(Number(actions.dataset.hatStatus));
+
+  if (!info) return;
+
+  const button = actions.querySelector('.hat-tip');
+  const count = actions.querySelector('.hat-count');
+
+  actions.dataset.state = 'ready';
+  button.setAttribute('aria-pressed', String(info.tipped));
+  button.querySelector('.hat-tip-label').textContent = info.tipped ? 'Hat tipped' : 'Tip your hat';
+
+  if (info.pending) {
+    button.setAttribute('aria-busy', 'true');
+  } else {
+    button.removeAttribute('aria-busy');
+  }
+
+  // With no tips the count is not drawn, but it is still there for screen readers.
+  count.textContent = hatTipCountText(info.count);
+  count.classList.toggle('visually-hidden', info.count === 0);
+}
+
+function renderHatTips(statusIds) {
+  for (const id of statusIds) {
+    for (const actions of document.querySelectorAll(`[data-hat-status="${id}"]`)) {
+      renderHatTipActions(actions);
+    }
+  }
+}
+
+hatTips.subscribe(renderHatTips);
+
+function showHatNote(actions, text, isError = false) {
+  const note = actions.querySelector('.hat-note');
+
+  if (isError && text) {
+    setErrorNote(note, text);
+  } else {
+    note.textContent = text;
+  }
+}
+
+async function tipHat(statusId, actions) {
+  const userId = currentSession?.user?.id;
+
+  if (!userId) {
+    showHatNote(actions, 'Sign in to tip your hat.');
+    return;
+  }
+
+  showHatNote(actions, '');
+
+  const result = await hatTips.toggle(statusId, userId);
+
+  if (result.ok || result.reason === 'busy' || result.reason === 'unknown') return;
+
+  console.error(result.error);
+
+  if (result.reason === 'session-expired') {
+    // Signing out first, because it clears every note on the page.
+    await expireSession();
+    showHatNote(actions, 'Your session expired. Sign in again to tip your hat.', true);
+    return;
+  }
+
+  showHatNote(actions, "Couldn't save your hat tip. Try again.", true);
+}
+
+// One request for the statuses just drawn. If it fails (after the usual retries) the
+// feed stays as it is and those statuses simply have no hat tip button.
+async function loadHatTips(statusIds) {
+  const result = await withRetry(() => hatTips.load(statusIds));
+
+  if (result.error) {
+    console.error(result.error);
+  }
+
+  const unavailable = result.error ? statusIds.filter((id) => !hatTips.get(id)) : result.missing;
+
+  for (const id of unavailable) {
+    for (const actions of document.querySelectorAll(`[data-hat-status="${id}"]`)) {
+      actions.dataset.state = 'unavailable';
+    }
+  }
+}
+
+// Which statuses the visitor has tipped depends on who is signed in, so when that
+// changes the buttons already on the page are brought up to date. The first call
+// (the session being found at page load) is skipped: the feed asks for its own
+// hat tips with that same session.
+let hatTipUser;
+
+function syncHatTips(session) {
+  const userId = session?.user.id ?? null;
+
+  for (const note of document.querySelectorAll('.hat-note')) note.textContent = '';
+
+  if (hatTipUser === undefined) {
+    hatTipUser = userId;
+    return;
+  }
+
+  if (userId === hatTipUser) return;
+
+  hatTipUser = userId;
+
+  if (!userId) {
+    hatTips.clearTipped();
+    return;
+  }
+
+  const ids = [...document.querySelectorAll('[data-hat-status]')].map((actions) => Number(actions.dataset.hatStatus));
+
+  if (ids.length > 0) loadHatTips(ids);
 }
 
 function createTimeElement(createdAt) {
