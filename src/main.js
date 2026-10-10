@@ -7,6 +7,7 @@ import { avatarLetter } from './avatar-letter.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
+import { parseStatusId } from './status-id.js';
 
 // Pauses before the second and third attempts at an image that failed to load.
 // The query string keeps a retry from being answered by a cached failure.
@@ -112,6 +113,8 @@ function route(moved = false) {
     renderHome();
   } else if (parts.length === 2 && parts[0] === 'users') {
     renderUserPage(parts[1], isCurrent);
+  } else if (parts.length === 2 && parts[0] === 'statuses') {
+    renderStatusPage(parts[1], isCurrent);
   } else {
     renderNotFound();
   }
@@ -184,7 +187,9 @@ document.addEventListener('click', (event) => {
 
   const url = new URL(link.href, window.location.href);
   const parts = url.pathname.split('/').filter(Boolean);
-  const isAppPage = parts.length === 0 || (parts.length === 2 && parts[0] === 'users');
+  const isAppPage =
+    parts.length === 0 ||
+    (parts.length === 2 && (parts[0] === 'users' || parts[0] === 'statuses'));
 
   if (url.origin !== window.location.origin || !isAppPage) return;
 
@@ -591,6 +596,90 @@ async function renderUserPage(username, isCurrent) {
   } else if (count !== null) {
     profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
   }
+}
+
+// One status on its own page (/statuses/<id>), the stable address for a status. It
+// shows the same row as the feeds, hat tip included. Anything that is not a public
+// status (a bad id, a missing or non-public status) is "Page not found"; a failed
+// request is not, so being offline doesn't look like a missing page.
+async function renderStatusPage(segment, isCurrent) {
+  const id = parseStatusId(segment);
+
+  if (id === null) {
+    renderNotFound();
+    return;
+  }
+
+  mount(`
+          <section class="feed-panel">
+            <div class="panel-heading">
+              <h2 class="panel-title">Status</h2>
+            </div>
+            <div class="feed" aria-busy="true">${feedPlaceholder(1)}</div>
+          </section>
+  `, { linkHome: true });
+
+  const feed = document.querySelector('.feed');
+
+  async function load() {
+    feed.setAttribute('aria-busy', 'true');
+    feed.innerHTML = feedPlaceholder(1);
+
+    const { data: status, error } = await withRetry(
+      () =>
+        supabase
+          .from('statuses')
+          .select('id, content, created_at, profiles(display_name, username)')
+          .eq('id', id)
+          .eq('visibility', 'public')
+          .maybeSingle(),
+      () => !isCurrent()
+    );
+
+    // The visitor may have moved to another page while this was loading.
+    if (!isCurrent()) return;
+
+    feed.removeAttribute('aria-busy');
+
+    if (error) {
+      console.error(error);
+
+      document.title = 'Status · Status Rodeo';
+      pageReady();
+
+      const message = createFeedMessage("Couldn't load this status.");
+      setErrorNote(message, "Couldn't load this status.");
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = 'Try again';
+      retry.addEventListener('click', load);
+      message.append(' ', retry);
+      feed.replaceChildren(message);
+      return;
+    }
+
+    if (!status || !status.profiles) {
+      renderNotFound();
+      return;
+    }
+
+    const { display_name: displayName, username } = status.profiles;
+
+    document.title = `Status by ${displayName} (@${username}) · Status Rodeo`;
+    pageReady();
+    feed.replaceChildren(
+      createStatusRow({
+        id: status.id,
+        username,
+        displayName,
+        content: status.content,
+        createdAt: status.created_at,
+      })
+    );
+    loadHatTips([status.id]);
+  }
+
+  await load();
 }
 
 // The sort dropdown above a feed. It is the only control in the heading, so
@@ -1103,7 +1192,7 @@ function createLoadingAvatar() {
 }
 
 // Static placeholder rows shown in the feed until the statuses arrive.
-function feedPlaceholder() {
+function feedPlaceholder(rows = 3) {
   const row = `
     <div class="status-skeleton" aria-hidden="true">
       <span class="skeleton-avatar"></span>
@@ -1111,7 +1200,7 @@ function feedPlaceholder() {
     </div>
   `;
 
-  return `${row.repeat(3)}<p class="visually-hidden" role="status">Loading statuses</p>`;
+  return `${row.repeat(rows)}<p class="visually-hidden" role="status">Loading statuses</p>`;
 }
 
 // A short line of text shown inside the feed panel instead of statuses.

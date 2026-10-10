@@ -25,7 +25,8 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic, the avatar letter and the hat tips logic in `tests/`.
+  length rule, the posting logic, the avatar letter, the hat tips logic and the status id
+  parser in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -39,8 +40,10 @@ status-rodeo.pages.dev).
 Build settings: framework preset None, build command `npm run build`, output
 directory `dist`, root directory blank.
 
-Client-side routes such as `/users/<username>` work through Cloudflare Pages' SPA
-fallback. No `_redirects` file is needed.
+Client-side routes such as `/users/<username>` and `/statuses/<id>` work through
+Cloudflare Pages' SPA fallback. No `_redirects` file is needed. Because of that
+fallback, a missing or non-public status still answers HTTP 200 (the app draws its
+"Page not found" view); there is no real 404 status for client routes.
 
 ## Environment
 
@@ -56,7 +59,7 @@ fallback. No `_redirects` file is needed.
 ## Structure
 
 - `src/main.js` holds client-side routing by pathname (`/`, `/users/:username`,
-  otherwise not-found) and all views. Links to app pages are intercepted and
+  `/statuses/:id`, otherwise not-found) and all views. Links to app pages are intercepted and
   navigate with the History API (`navigate()`, `popstate`), so moving between
   pages never reloads the browser page; other links, new-tab or modified clicks
   and `#` links behave normally. The masthead and sidebar are a shared frame built
@@ -75,6 +78,9 @@ fallback. No `_redirects` file is needed.
   live region (`#route-announcer`) and, if the clicked link is gone, moves focus
   to `#page`. Each page sets `document.title`. Not-found is drawn
   inside the frame, with the sidebar.
+- `src/status-id.js` parses the id in `/statuses/<id>` (plain positive whole numbers, no
+  leading zeros, at most 15 digits; anything else is null and the page is not-found
+  without a request). It has unit tests.
 - `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
   works on whole characters (grapheme clusters), so a name starting with an emoji
   isn't cut in half. It has unit tests.
@@ -333,6 +339,18 @@ card is only as tall as the avatar and lines up with the sidebar: on phones it i
 smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. An
 unknown username shows "Page not found", and so does any unknown path: a panel
 (`.notice`) with the display-font heading and a link back home.
+
+Status page: `/statuses/<id>` (`renderStatusPage()`) is the stable address of one
+status, by its numeric id so it survives a username change. It is a `.feed-panel` with
+the heading "Status" and the same status row as the feeds (hat tip included, same shared
+state). It is one query for a public status with its author (`profiles(display_name,
+username)`), retried like the feeds. A bad id (see `src/status-id.js`) makes no request
+and shows "Page not found"; so does a status that is missing or not public (private ones
+are hidden by RLS and by the explicit `visibility = 'public'` filter). A failed request
+is not "Page not found": it shows "Couldn't load this status." with a "Try again"
+button. The tab title is "Status by Display name (@username) · Status Rodeo". Nothing in the
+interface links to it yet; links to it are intercepted like other app pages. A trailing
+slash is accepted.
 
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with
