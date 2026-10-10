@@ -137,35 +137,38 @@ Other facts:
   provisioned by hand, so creating an Auth user alone does not give a working
   account.
 
-Hat tips (migration prepared, NOT yet confirmed in production): `supabase/hat-tips.sql`
-creates `hat_tips (status_id, user_id, created_at)` with primary key
-`(status_id, user_id)`, foreign keys to `statuses(id)` and `auth.users(id)` both
+Hat tips (live in production): `hat_tips (status_id, user_id, created_at)` with primary
+key `(status_id, user_id)`, foreign keys to `statuses(id)` and `auth.users(id)` both
 `ON DELETE CASCADE`, RLS with select/insert/delete policies on the caller's own rows
-(insert also requires a public status), table privileges for `authenticated` only
-(select, insert, delete; none for `anon`), and `hat_tip_info(bigint[])`, a `SECURITY
-DEFINER` function with an empty `search_path`, executable by `anon` and
-`authenticated`, that returns counts and the caller's own tipped flag for up to 100
-public statuses and never user ids. Production database changes are applied by hand
-(by Muse), then checked with `supabase/hat-tips-verify.sql` (every row must say
-`ok = true`; it changes nothing permanently). Until that has been done the live
-database has no `hat_tips` table, and the app then shows no hat tip buttons. Once it is
-applied and verified, move this into the sections here and into `supabase/schema.sql`
-and update the date they were checked.
+(insert also requires a public status; there is no update), table privileges for
+`authenticated` only (select, insert, delete; none for `anon`), and
+`hat_tip_info(bigint[])`, a `SECURITY DEFINER` function owned by `postgres` with an empty
+`search_path`, executable by `anon` and `authenticated`, that returns counts and the
+caller's own tipped flag for up to 100 public statuses and never user ids. The SQL is
+`supabase/hat-tips.sql` (also copied into `supabase/schema.sql`). It was applied by hand
+(by Muse) and checked with `supabase/hat-tips-verify.sql` on 2026-10-10: preflight 5 of 5,
+verification 27 of 27, owner check confirmed (as reported to Chris; the results were not
+pasted into the session). Re-run the verify script after any change to either object; every
+row must say `ok = true` and it changes nothing permanently (it only skips a couple of
+`statuses` ids). The three older sections here were last checked against the live database
+on 2026-10-06, and the check constraint on 2026-10-08.
 
-Row Level Security is enabled on both tables. Policies:
+Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
+`profiles` and `statuses`:
 - "Public statuses are viewable": `statuses` select, role `public`, using
   `visibility = 'public'`
 - "Users can create their own statuses": `statuses` insert, role `authenticated`,
   with check `(select auth.uid()) = user_id`
 - "Public profiles are viewable": `profiles` select, role `public`, using `true`
-- These are the only policies. There are no update or delete policies on
-  `statuses`, and no insert, update, or delete policies on `profiles`.
+- These are the only policies on those two tables. There are no update or delete
+  policies on `statuses`, and no insert, update, or delete policies on `profiles`.
+  (`hat_tips` has its own three policies, described above.)
 
 Writes through the Data API are governed only by these policies. There are no
 storage buckets, and GraphQL is disabled.
 
-The `anon` and `authenticated` roles hold every table privilege on both tables
-(the Supabase default), so RLS is the only thing limiting access. Never disable
+The `anon` and `authenticated` roles hold every table privilege on `profiles` and
+`statuses` (the Supabase default; `hat_tips` is stricter, see above), so RLS is the only thing limiting access. Never disable
 RLS on these tables, and don't add broad policies without checking what they
 expose.
 
