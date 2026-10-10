@@ -25,8 +25,8 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic, the avatar letter, the hat tips logic and the status id
-  parser in `tests/`.
+  length rule, the posting logic, the avatar letter, the hat tips logic, the status id
+  parser and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -93,7 +93,15 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   failures) and `createHatTipStore()` (what every button shows, keyed by status id;
   optimistic update with rollback, one save at a time per status). The button is built
   by `createHatTipActions()` in `src/main.js`; see "Hat tips" under Design direction.
-- API handlers live in `functions/api/`.
+- `src/rss.js` and `src/feed.js` are the RSS feeds (no DOM, unit tested). `rss.js` turns
+  rows into RSS 2.0 text (escaping, removal of characters XML forbids, the short plain
+  title, canonical URLs); `feed.js` reads the public statuses through a Supabase client
+  that is passed in and builds the `Response` (`sitewideFeed()`, `userFeed()`). They live
+  in `src/` on purpose: only `functions/` is scanned for routes, and the client never
+  imports them. See "RSS feeds" under API.
+- API handlers live in `functions/api/`. The feed endpoints are `functions/feed.xml.js`
+  and `functions/users/[username]/feed.xml.js` (each just creates the client and calls
+  `src/feed.js`).
 - The folder `functions/api/users/[username]/` must be named with literal square
   brackets. With any other name, `params.username` is undefined.
 
@@ -104,6 +112,42 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 - Anything that shows a particular person's current status, such as the owner's
   personal site, must use the per-user endpoint. `/api/status` will show whoever
   posted most recently.
+
+### RSS feeds
+
+- `/feed.xml`: RSS 2.0 of the 30 newest public statuses from everyone.
+- `/users/<username>/feed.xml`: the same for one user (404 if there is no such user;
+  an empty valid feed if they have no public statuses). The username must match
+  `[A-Za-z0-9_.-]{1,50}` and the case must match exactly, otherwise it is a 404 without a
+  database request.
+- Newest first: `created_at` descending, then `id` descending (so statuses posted in the
+  same instant have a fixed order). Both queries filter on `visibility = 'public'` and
+  use the public key, so Row Level Security applies as on the site. User ids and email
+  addresses are never selected or output.
+- Each item: `<title>` is the status on one line, cut at 80 characters with an ellipsis;
+  `<description>` is the complete text as plain text (escaped for XML, never HTML);
+  `<link>` and `<guid>` are `https://status.rodeo/statuses/<id>`; `<pubDate>` is RFC 822;
+  `<dc:creator>` is the display name (RSS's own `<author>` needs an email address, so it
+  is not used). Characters XML forbids are removed, and a status that is empty after that
+  is left out, because one bad status must not break the feed. Hat tip counts are not in
+  the feeds.
+- Links, GUIDs and the feed's own `atom:link rel="self"` always use `https://status.rodeo`,
+  even when the feed was fetched from a preview or pages.dev, so a status keeps one GUID.
+  `lastBuildDate` is the newest item's date, not the request time.
+- Responses: `Content-Type: application/rss+xml; charset=utf-8`, `Cache-Control: public,
+  max-age=300`. GET and HEAD work (HEAD has no body); other methods are 405. Failures are a
+  plain-text 500 with `no-store`; an unknown user is a 404 with `max-age=60`. There is no
+  Cloudflare Cache API layer: add one only if real usage shows database load.
+- Autodiscovery: `index.html` has a `<link rel="alternate" type="application/rss+xml">` for
+  `/feed.xml` on every page. Per-user autodiscovery is not built (feed readers do not run
+  the app's JavaScript, so it would need a function in front of `/users/<username>`).
+- `npm run dev` does not run the feeds (like `/api/status`, `/feed.xml` returns the app
+  shell); test them with `wrangler pages dev` or a Cloudflare preview. Verified in
+  Cloudflare's documentation: `[username]` matches one path segment, Functions run before
+  static files and the SPA fallback, a trailing slash reaches the same Function, and
+  `onRequest` receives every method (so HEAD is handled in the code). Not covered by the
+  documentation, so check it on a preview after changing it: that `feed.xml.js` becomes
+  `/feed.xml`.
 
 ## Data and security
 
