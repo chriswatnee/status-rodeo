@@ -6,7 +6,7 @@
 export const PLACEHOLDER_MAX_LENGTH = 28;
 
 export const COMPOSER_PLACEHOLDERS = [
-  'What’s your status?',
+  'What’s the news, cowpoke?',
   'Howdy, partner. What’s up?',
   'This ain’t my first rodeo…',
   'What’s the word, pardner?',
@@ -17,7 +17,7 @@ export const COMPOSER_PLACEHOLDERS = [
   'Yeehaw! What’s going on?',
   'Rustle up a status…',
   'What’s brewin’ on the range?',
-  'Lasso a thought…',
+  'Spin us a yarn…',
   'Whatcha ridin’ on today?',
   'Tumbleweeds quiet. Say hi!',
   'Reckon what’s on your mind?',

@@ -419,8 +419,8 @@ Composer: the text field and its actions are one rounded box (`.composer-fields`
 which draws the focus ring via `:focus-within`): the text on top, then a row with
 the live `0/280` counter at the left and the Post button at the right, and any
 error message under it. The counter is in the existing muted colour. The empty box's placeholder is a random
-line from `src/placeholders.js` each time the home page is drawn ("What’s your status?" is one
-of them), never the same line twice in a row. It is only a hint: the field's label stays
+line from `src/placeholders.js` each time the home page is drawn (the plain "What’s your status?"
+is not one of them), never the same line twice in a row. It is only a hint: the field's label stays
 "What's your status?". Every line is capped at 28 characters so it fits on one line on a 320px
 phone (checked in the browser at 320, 360 and 390px); keep new lines Western, short and with the
 curly apostrophe. Under 640px the composer's avatar is hidden (it is

@@ -19,8 +19,8 @@ test('lines are unique, one line each, and use the curly apostrophe like the ori
   }
 });
 
-test('the original wording stays in the list', () => {
-  assert.ok(COMPOSER_PLACEHOLDERS.includes('What’s your status?'));
+test('every line is Western-flavoured, not the plain default', () => {
+  assert.ok(!COMPOSER_PLACEHOLDERS.includes('What’s your status?'));
 });
 
 test('picks by the random number, including both ends', () => {
