@@ -1,8 +1,10 @@
 -- Status Rodeo schema export, generated 2026-10-06 from the live database, plus the
--- statuses_content_check constraint, verified against production on 2026-10-08.
+-- statuses_content_check constraint, verified against production on 2026-10-08, plus
+-- the Hat Tips objects (hat_tips table, hat_tip_info function), applied in production and
+-- verified with hat-tips-verify.sql (27 of 27 checks) on 2026-10-10.
 -- Covers tables, foreign keys, a check constraint, RLS, and policies.
 -- Table grants are not included: anon and authenticated hold the Supabase default
--- grants on both tables.
+-- grants on profiles and statuses. hat_tips is different: see its section below.
 -- Requires the auth schema (present in every Supabase project) for auth.users.
 
 create table public.profiles (
@@ -57,3 +59,85 @@ create policy "Public statuses are viewable"
 create policy "Users can create their own statuses"
   on public.statuses for insert to authenticated
   with check (((select auth.uid() as uid) = user_id));
+
+-- ---------------------------------------------------------------------------
+-- Hat Tips. Same objects as supabase/hat-tips.sql (the migration that was applied),
+-- including its table grants, which here are deliberately NOT the Supabase default:
+-- anon has no access, authenticated has select, insert and delete only.
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.hat_tips (
+  status_id bigint not null references public.statuses (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamp with time zone not null default now(),
+  primary key (status_id, user_id)
+);
+
+-- The primary key serves lookups by status. This one serves the ON DELETE CASCADE
+-- from auth.users and "my tips" lookups.
+create index if not exists hat_tips_user_id_idx on public.hat_tips (user_id);
+
+alter table public.hat_tips enable row level security;
+
+-- Supabase grants every privilege on new tables to anon and authenticated. Take them
+-- all back and give signed-in users only what the app needs (rows are immutable, so
+-- there is no UPDATE).
+revoke all on public.hat_tips from anon, authenticated;
+grant select, insert, delete on public.hat_tips to authenticated;
+
+drop policy if exists "Users see their own hat tips" on public.hat_tips;
+create policy "Users see their own hat tips"
+  on public.hat_tips for select to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- Tipping is allowed only as yourself and only on a public status. The EXISTS check
+-- runs under the statuses policy "Public statuses are viewable", so that policy hides
+-- non-public statuses too; the explicit visibility test is a second layer, kept so
+-- this policy does not depend on the other one staying as it is.
+drop policy if exists "Users tip their hat as themselves" on public.hat_tips;
+create policy "Users tip their hat as themselves"
+  on public.hat_tips for insert to authenticated
+  with check (
+    (select auth.uid()) = user_id
+    and exists (
+      select 1
+      from public.statuses s
+      where s.id = status_id
+        and s.visibility = 'public'
+    )
+  );
+
+drop policy if exists "Users take back their own hat tips" on public.hat_tips;
+create policy "Users take back their own hat tips"
+  on public.hat_tips for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- Counts and the caller's own state for a batch of statuses, in one request.
+-- SECURITY DEFINER so it can count rows the caller cannot read; it is kept narrow:
+--   * only public statuses are returned (anything else is silently left out),
+--   * only counts and the caller's own flag come back, never user ids,
+--   * at most 100 ids are looked at per call,
+--   * the search path is empty, so every name is schema-qualified.
+-- Signed-out callers get tipped = false (auth.uid() is null).
+create or replace function public.hat_tip_info(status_ids bigint[])
+returns table (status_id bigint, tips bigint, tipped boolean)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    s.id,
+    count(h.user_id),
+    coalesce(bool_or(h.user_id = (select auth.uid())), false)
+  from public.statuses s
+  left join public.hat_tips h on h.status_id = s.id
+  where s.id = any (status_ids[1:100])
+    and s.visibility = 'public'
+  group by s.id;
+$$;
+
+-- New functions are executable by PUBLIC (and, on Supabase, by default grants).
+-- Reset that, then allow exactly the two API roles.
+revoke all on function public.hat_tip_info(bigint[]) from public, anon, authenticated;
+grant execute on function public.hat_tip_info(bigint[]) to anon, authenticated;
