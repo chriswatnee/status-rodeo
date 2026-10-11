@@ -105,6 +105,10 @@
 @media (max-width: 639px) {
   :root {
     --avatar: 3.25rem;
+    /* Phones: 1rem of side padding in every panel (the sidebar bar uses it too, so all the left
+       edges line up) and 0.65rem above and below the composer and profile card. */
+    --inset: 1rem;
+    --inset-y: 0.65rem;
   }
 }
 
@@ -1221,6 +1225,16 @@ textarea:focus-visible {
     display: none;
   }
 
+  /* A shorter empty box that grows with the text (up to about five lines, then scrolls).
+     Browsers without field-sizing (before Chrome 123, Safari 26.2, Firefox 152) keep the
+     shorter box, which scrolls and can still be dragged taller. The text stays at 16px or
+     more, because iOS zooms the page when a smaller field is focused. */
+  .composer textarea {
+    field-sizing: content;
+    min-height: 2.9rem;
+    max-height: 8rem;
+  }
+
   .profile {
     gap: 0.75rem;
   }
@@ -1254,8 +1268,8 @@ textarea:focus-visible {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     column-gap: 0.75rem;
-    row-gap: 0.6rem;
-    padding: 0.65rem 0.9rem;
+    row-gap: 0.45rem;
+    padding: var(--inset-y) var(--inset);
   }
 
   .login,
@@ -1312,7 +1326,7 @@ textarea:focus-visible {
     order: 3;
     grid-column: 1 / -1;
     gap: 0.35rem;
-    padding-top: 0.6rem;
+    padding-top: 0.45rem;
     border-top: 1px solid var(--divider);
   }
 
@@ -1324,14 +1338,10 @@ textarea:focus-visible {
 
 /*
   Very small phones (320 to 360px): the composer placeholder and the feed
-  heading's sort dropdown no longer fit at normal size, so tighten the side
-  padding, the composer's avatar column and a few font sizes.
+  heading's sort dropdown no longer fit at normal size, so tighten the
+  composer's padding and a few font sizes.
 */
 @media (max-width: 360px) {
-  :root {
-    --inset: 1rem;
-  }
-
   .composer textarea {
     padding: 0.6rem 0.7rem 0.3rem;
     font-size: 1rem;
