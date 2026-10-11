@@ -1487,50 +1487,48 @@ function refreshTimes() {
 
 setInterval(refreshTimes, 60 * 1000);
 
-// The illustrated masthead is its own image asset (public/masthead.webp, with a
-// tighter phone crop in public/masthead-mobile.webp). The words "Status Rodeo" are part of the artwork, so the h1 is visually hidden.
-// It links home everywhere except the home page itself.
+// The masthead is an illustrated picture of a blank wooden sign (public/masthead.webp,
+// with a 2:1 crop for phones in public/masthead-mobile.webp). The words "Status Rodeo"
+// are real text, the page's h1, laid over the sign by the CSS, so the picture itself is
+// decorative (empty alt text). The h1 links home everywhere except the home page, and the
+// link covers the whole masthead.
 function masthead() {
-  // Phones get a tighter crop (cowboy, horse, dog and sign) so the sign stays
-  // readable. Desktop uses the full-width image.
   return `
     <header class="masthead">
-      <h1 class="visually-hidden">Status Rodeo</h1>
       <picture>
         <source
           media="(max-width: 639px)"
           srcset="/masthead-mobile.webp"
-          width="1536"
-          height="768"
+          width="1448"
+          height="724"
         />
         <img
           class="masthead-image"
           src="/masthead.webp"
-          width="3072"
-          height="768"
-          alt="Status Rodeo: a cowboy on horseback and a dog look out over a desert valley at sunset"
+          width="2172"
+          height="724"
+          alt=""
           fetchpriority="high"
         />
       </picture>
+      <h1 class="masthead-title">Status Rodeo</h1>
     </header>
   `;
 }
 
-// Wraps the masthead picture in a link home, or unwraps it. The picture itself
-// is moved, not rebuilt, so the image doesn't reload between pages.
+// Makes the title a link home, or plain text again. The picture is not touched, so it
+// doesn't reload between pages.
 function setMastheadLink(linkHome) {
-  const header = document.querySelector('.masthead');
-  const picture = header.querySelector('picture');
-  const link = header.querySelector('a');
+  const title = document.querySelector('.masthead-title');
+  const link = title.querySelector('a');
 
   if (linkHome && !link) {
     const anchor = document.createElement('a');
     anchor.href = '/';
-    header.append(anchor);
-    anchor.append(picture);
+    anchor.textContent = title.textContent;
+    title.replaceChildren(anchor);
   } else if (!linkHome && link) {
-    header.append(picture);
-    link.remove();
+    title.textContent = link.textContent;
   }
 }
 

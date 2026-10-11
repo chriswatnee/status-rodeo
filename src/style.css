@@ -193,30 +193,94 @@ textarea:focus-visible {
   padding: var(--gap) 0 3rem;
 }
 
-/* The masthead is full width, above the app. Its image keeps a 4:1 ratio. */
+/*
+  The masthead is a framed picture above the app, not full width: it lines up with the
+  panels' side margin and stops at 1100px, so the artwork (2172px wide) is never
+  stretched. The title is real text laid over the blank sign in the picture, sized
+  with container units so it keeps its place on the sign at every width. The picture is
+  3:1 on desktop and a 2:1 crop of it on phones.
+*/
 
 .masthead {
-  /* Reserves the space (and shows a plain color) until the image arrives. */
-  aspect-ratio: 4 / 1;
-  background: var(--avatar-bg);
+  --masthead-ratio: 3 / 1;
+  /* Where the middle of the title sits, as a share of the width (a third of the
+     picture's height on desktop). */
+  --title-y: 11.7cqw;
+  --title-size: 5.9cqw;
+
+  position: relative;
+  display: grid;
+  container-type: inline-size;
+  width: min(1100px, calc(100% - 2 * max(0.7rem, 14px)));
+  margin: var(--gap) auto 0;
+  aspect-ratio: var(--masthead-ratio);
+  /* Reserves the space, and is dark wood so the cream title reads while the picture loads. */
+  background: #5a3a1e;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.masthead picture,
+.masthead img {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .masthead img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 1;
+  object-fit: cover;
 }
 
-.masthead a {
-  display: block;
+.masthead-title {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: center;
+  margin: calc(var(--title-y) - 0.5em) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--title-size);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fbeccb;
+  -webkit-text-stroke: 0.04em #351709;
+  paint-order: stroke fill;
+  text-shadow: 0.03em 0.06em 0 #2a1408;
+}
+
+.masthead-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The link covers the whole masthead, so the picture is clickable too. */
+.masthead-title a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.masthead-title a:focus-visible {
+  outline: none;
+}
+
+.masthead-title a:focus-visible::after {
+  outline: 3px solid #fbeccb;
+  outline-offset: -8px;
+  border-radius: var(--radius);
 }
 
 /* Phones use a 2:1 crop (public/masthead-mobile.webp). */
 @media (max-width: 639px) {
-  .masthead,
-  .masthead img {
-    aspect-ratio: 2 / 1;
+  .masthead {
+    /* The same side margin as .site on phones. */
+    width: calc(100% - 2rem);
+    --masthead-ratio: 2 / 1;
+    --title-y: 17.5cqw;
+    --title-size: 8cqw;
   }
 }
 
