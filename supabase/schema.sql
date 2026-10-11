@@ -1,17 +1,21 @@
 -- Status Rodeo schema export, generated 2026-10-06 from the live database, plus the
 -- statuses_content_check constraint, verified against production on 2026-10-08, plus
 -- the Hat Tips objects (hat_tips table, hat_tip_info function), applied in production and
--- verified with hat-tips-verify.sql (27 of 27 checks) on 2026-10-10.
--- Covers tables, foreign keys, a check constraint, RLS, and policies.
+-- verified with hat-tips-verify.sql (27 of 27 checks) on 2026-10-10, plus the avatar icons
+-- (profiles.avatar, its check, the update policy and column grant), applied in production and
+-- verified with avatar-icons-verify.sql (20 of 20 checks) on 2026-10-11.
+-- Covers tables, foreign keys, check constraints, RLS, and policies.
 -- Table grants are not included: anon and authenticated hold the Supabase default
--- grants on profiles and statuses. hat_tips is different: see its section below.
+-- grants on profiles and statuses, except UPDATE on profiles (see the avatar section below).
+-- hat_tips is different: see its section below.
 -- Requires the auth schema (present in every Supabase project) for auth.users.
 
 create table public.profiles (
   user_id uuid not null primary key,
   created_at timestamp with time zone default now(),
   username text not null unique,
-  display_name text not null
+  display_name text not null,
+  avatar text not null default 'cowboy-hat'::text
 );
 
 create table public.statuses (
@@ -45,12 +49,31 @@ alter table public.statuses
     and content !~ '^\s*$'
   );
 
+-- The avatar is the file name of one of the icons in public/avatars/icons/, without the
+-- extension. It ends up in a URL path, so only a plain kebab-case name is allowed. The icons
+-- are not listed here, so a new icon needs no SQL (the app shows the default for a name it
+-- does not know). Same as supabase/avatar-icons.sql.
+alter table public.profiles
+  add constraint profiles_avatar_check
+  check (avatar ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(avatar) <= 40);
+
 alter table public.profiles enable row level security;
 alter table public.statuses enable row level security;
 
 create policy "Public profiles are viewable"
   on public.profiles for select to public
   using (true);
+
+-- A signed-in user can update only their own profile row, and only the avatar column: UPDATE
+-- is taken from anon and authenticated and granted back on that one column, which keeps
+-- username, display_name, user_id and created_at read-only from the Data API.
+revoke update on public.profiles from anon, authenticated;
+grant update (avatar) on public.profiles to authenticated;
+
+create policy "Users can update their own profile"
+  on public.profiles for update to authenticated
+  using (((select auth.uid() as uid) = user_id))
+  with check (((select auth.uid() as uid) = user_id));
 
 create policy "Public statuses are viewable"
   on public.statuses for select to public

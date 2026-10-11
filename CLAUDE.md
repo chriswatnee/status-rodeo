@@ -204,9 +204,8 @@ Tables:
   text not null (1 to 280 characters, see below), `visibility` text not null default `'public'`, `created_at`
   timestamptz default now().
 - `profiles`: `user_id` uuid primary key, `created_at` timestamptz default now(),
-  `username` text not null unique, `display_name` text not null, and (once
-  `supabase/avatar-icons.sql` is applied, see "Avatar icons" below) `avatar` text not null
-  default `'cowboy-hat'`.
+  `username` text not null unique, `display_name` text not null, `avatar` text not null
+  default `'cowboy-hat'` (see "Avatar icons" below).
 
 Foreign keys (all NO ACTION): `statuses.user_id` references both `auth.users.id`
 and `profiles.user_id`; `profiles.user_id` references `auth.users.id`. Keep the
@@ -247,18 +246,20 @@ row must say `ok = true` and it changes nothing permanently (it only skips a cou
 `statuses` ids). The three older sections here were last checked against the live database
 on 2026-10-06, and the check constraint on 2026-10-08.
 
-Avatar icons (SQL written, NOT YET APPLIED: this section and `supabase/schema.sql` describe the
-database as it will be, so update both after it is applied and verified): `supabase/avatar-icons.sql`
-adds `profiles.avatar` (text, not null, default `'cowboy-hat'`, CHECK `profiles_avatar_check`:
-plain kebab-case, at most 40 characters; it does not list the icons, so a new icon needs no SQL),
-takes UPDATE on `profiles` away from `anon` and `authenticated` and grants `authenticated` UPDATE
-on the `avatar` column only, and adds the policy "Users can update their own profile" (`profiles`
-update, role `authenticated`, using and with check `(select auth.uid()) = user_id`). The column
-grant is what keeps `username`, `display_name`, `user_id` and `created_at` read-only. Apply it in
-the Supabase SQL editor BEFORE merging the code that selects `avatar`: a select that names a
-missing column fails, which would break every feed. `supabase/avatar-icons-verify.sql` checks it
-(every row must say `ok = true`; it rolls back everything it does). Applying it first is harmless
-to the old code.
+Avatar icons (live in production): `profiles.avatar` is text, not null, default `'cowboy-hat'`,
+with the CHECK `profiles_avatar_check` (plain kebab-case, at most 40 characters; it does not list
+the icons, so a new icon needs no SQL). UPDATE on `profiles` is taken away from `anon` and
+`authenticated` and granted back to `authenticated` on the `avatar` column only, and the policy
+"Users can update their own profile" (`profiles` update, role `authenticated`, using and with check
+`(select auth.uid()) = user_id`) limits it to your own row. The column grant is what keeps
+`username`, `display_name`, `user_id` and `created_at` read-only from the Data API. The SQL is
+`supabase/avatar-icons.sql` (also copied into `supabase/schema.sql`). It was applied by hand (by
+Muse) and checked with `supabase/avatar-icons-verify.sql` on 2026-10-11: 20 of 20 rows `ok = true`,
+and every existing profile showed `cowboy-hat` (as reported to Chris; the results were not pasted
+into the session). Re-run the verify script after any change to these objects; it rolls back
+everything it does. Code that selects `avatar` needs the column to exist: a select that names a
+missing column fails, which would break every feed. The three older sections here were last
+checked against the live database on 2026-10-06, and the check constraint on 2026-10-08.
 
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
@@ -267,16 +268,17 @@ Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies
 - "Users can create their own statuses": `statuses` insert, role `authenticated`,
   with check `(select auth.uid()) = user_id`
 - "Public profiles are viewable": `profiles` select, role `public`, using `true`
-- These are the only policies on those two tables (until the avatar SQL is applied, which adds
-  "Users can update their own profile" on `profiles`, see above). There are no update or delete
+- "Users can update their own profile": `profiles` update, role `authenticated`, using and with
+  check `(select auth.uid()) = user_id` (only the `avatar` column is updatable, see above)
+- These are the only policies on those two tables. There are no update or delete
   policies on `statuses`, and no insert or delete policies on `profiles`.
   (`hat_tips` has its own three policies, described above.)
 
 Writes through the Data API are governed only by these policies. There are no
 storage buckets, and GraphQL is disabled.
 
-The `anon` and `authenticated` roles hold every table privilege on `profiles` (except UPDATE, once
-the avatar SQL is applied) and `statuses` (the Supabase default; `hat_tips` is stricter, see above), so RLS is the only thing limiting access. Never disable
+The `anon` and `authenticated` roles hold every table privilege on `profiles` (except UPDATE, see
+Avatar icons above) and `statuses` (the Supabase default; `hat_tips` is stricter, see above), so RLS is the only thing limiting access. Never disable
 RLS on these tables, and don't add broad policies without checking what they
 expose.
 
