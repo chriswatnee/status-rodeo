@@ -51,6 +51,8 @@ document.addEventListener(
       // A <source> takes priority over src, so drop the sources before retrying
       // with the cache-busting URL.
       image.parentElement.querySelectorAll('source').forEach((source) => source.remove());
+      image.removeAttribute('srcset');
+      image.removeAttribute('sizes');
       image.src = retryUrl(failedUrl, attempt + 1);
     }, IMAGE_RETRY_DELAYS[attempt]);
   },
@@ -1487,8 +1489,9 @@ function refreshTimes() {
 
 setInterval(refreshTimes, 60 * 1000);
 
-// The masthead is an illustrated picture of a blank wooden sign (public/masthead.webp,
-// with a 3.1:1 crop for phones in public/masthead-mobile.webp). The words "Status Rodeo"
+// The masthead is an illustrated picture of a blank wooden sign (public/masthead-1700.webp,
+// -2550 and -3400, chosen by the browser from the screen size and density, with a 3.1:1
+// crop for phones in public/masthead-mobile.webp). The words "Status Rodeo"
 // are real text, the page's h1, laid over the sign by the CSS, so the picture itself is
 // decorative (empty alt text). The h1 links home everywhere except the home page, and the
 // link covers the whole masthead.
@@ -1504,9 +1507,11 @@ function masthead() {
         />
         <img
           class="masthead-image"
-          src="/masthead.webp"
-          width="2142"
-          height="402"
+          src="/masthead-2550.webp"
+          srcset="/masthead-1700.webp 1700w, /masthead-2550.webp 2550w, /masthead-3400.webp 3400w"
+          sizes="min(1698px, calc(100vw - 28px))"
+          width="2550"
+          height="479"
           alt=""
           fetchpriority="high"
         />

@@ -194,15 +194,17 @@ textarea:focus-visible {
 }
 
 /*
-  The masthead is a framed picture above the app, not full width: it lines up with the
-  panels' side margin and stops at 1100px, so the artwork (2142px wide) is never
-  stretched. The title is real text laid over the blank sign in the picture, sized
-  with container units so it keeps its place on the sign at every width. The picture is
-  about 5.3:1 on desktop and a 3.1:1 crop of it on phones.
+  The masthead is a framed, rounded picture above the app. Its outer edges are the same as
+  the content container's (the sidebar and feed below), so it is as wide as they are. The
+  artwork comes in three widths (public/masthead-1700, -2550 and -3400.webp, picked by
+  srcset and sizes) so it is never stretched on high-density screens. The title is real text
+  laid over the blank sign in the picture, sized with container units so it keeps its place
+  on the sign at every width. The picture is decorative. It is about 5.3:1 on desktop and a
+  3.1:1 crop of it on phones.
 */
 
 .masthead {
-  --masthead-ratio: 2142 / 402;
+  --masthead-ratio: 4284 / 804;
   /* Where the middle of the title sits, as a share of the width (a bit under half
      the picture's height). */
   --title-y: 8.3cqw;
@@ -211,7 +213,7 @@ textarea:focus-visible {
   position: relative;
   display: grid;
   container-type: inline-size;
-  width: min(1100px, calc(100% - 2 * max(0.7rem, 14px)));
+  width: min(81rem, calc(100% - 2 * max(0.7rem, 14px)));
   margin: var(--gap) auto 0;
   aspect-ratio: var(--masthead-ratio);
   /* Reserves the space, and is dark wood so the cream title reads while the picture loads. */

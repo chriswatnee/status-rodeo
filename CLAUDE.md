@@ -307,15 +307,23 @@ for the feed heading, profile name and avatar letters). Body text, statuses and 
 weights 400-800, `--font-body`), with the system sans-serif as the fallback; form
 controls inherit it. Lora (a serif) was tried and rejected because it made the feed
 read like a blog, and Poppins because it was too wide for small phones. The masthead is
-a painted picture of a blank hanging wooden sign at sunset, `public/masthead.webp`
-(2142x402, about 5.3:1, quality-90 WebP, ~150 KB; cropped tight to the artwork with no white margin; the original PNG is kept outside the repo),
-built by the `masthead()` helper in `src/main.js`. The words "Status Rodeo" are real
+a painted picture of a blank hanging wooden sign at sunset. The desktop artwork is an
+AI upscale (4284x804, about 5.3:1) of the original 2142x402 painting, shipped as three WebPs
+at quality 90, made by Lanczos downsizing: `public/masthead-1700.webp` (~115 KB),
+`masthead-2550.webp` (~200 KB) and `masthead-3400.webp` (~305 KB). The `<img>` picks one with
+`srcset` (width descriptors) and `sizes="min(1698px, calc(100vw - 28px))"`, so a 1x screen
+gets 1700 and a 2x screen gets up to 3400, always at least one image pixel per device pixel
+(no browser upscaling). Note that `naturalWidth` of an `<img srcset>` reports the layout
+size, not the file's width; read the width from `currentSrc`. The originals are kept outside
+the repo. It is built by the `masthead()` helper in `src/main.js`. The words "Status Rodeo" are real
 text, not part of the picture: the page's visible `h1` (`.masthead-title`, Zilla Slab
 Bold, cream with a dark outline) is laid over the sign by the CSS, sized with container
 units (`cqw`, the masthead is a size container) so it keeps its place on the sign at every
 width. The picture is therefore decorative (`alt=""`). The masthead is a framed, rounded
-picture, not full width: it uses the panels' side margin, is centred, and stops at 1100px
-(the artwork is 2142px wide, so it stays sharp up to 2x). Under 640px a `<picture>` source
+picture with the same outer edges as the content container (`.site`) below it, so it is as
+wide as the sidebar and feed together (at most 81rem, about 1698px, because the container
+stops growing there). The image retry (see Loading states) removes `srcset` and `sizes`
+before setting a `?retry=n` `src`, because `srcset` would otherwise override it. Under 640px a `<picture>` source
 swaps in `public/masthead-mobile.webp` (1250x402, 3.1:1, quality-90 WebP): the middle of the
 same artwork, full height, centred on the sign (the sign is too wide for anything squarer). The title links to `/` on every page except
 the home page (`setMastheadLink()` swaps the h1's text for a link; the picture is never
