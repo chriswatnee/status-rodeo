@@ -330,7 +330,21 @@ with the viewport so desktop proportions hold. Avatar slots show the first
 letter of the display name until `/avatars/<username>.webp` exists. Chris and Sofie
 have theirs (`public/avatars/chris.webp`, `public/avatars/sofie.webp`: 512x512 RGB
 quality-92 WebPs, full-bleed artwork with its own sky background; the frame, border and
-rounded corners are CSS). A new user needs a same-named square WebP. The display
+rounded corners are CSS). A new user needs a same-named square WebP. Avatar icon set
+(assets only so far, not yet used by any page or code): 12 Western objects in
+`public/avatars/icons/<name>.webp` (bandana, cactus, cattle-skull, coffee-mug,
+coiled-rope, cowboy-boot, cowboy-hat, guitar, horseshoe, lantern, sheriff-star,
+wagon-wheel), meant to become a picker. Spec for any new icon, so the set stays
+cohesive: 512x512 square, opaque sRGB WebP (quality 90, 24-40 KB), no alpha, no baked
+border, shadow or rounded corners (CSS draws those, like the other avatars). One shared
+flat parchment background (about `#f8ce87` at the edges; backgrounds were colour-matched
+to it, only background-coloured pixels shifted); keep the outer edge quiet. One centred
+object, dark-brown outline, painterly shading lit from the upper left, small ground
+shadow, site palette, no text. Keep the object within about 72% of the width (up to 85%
+for wide ones like the hat and skull), nothing near a corner (the avatar radius clips
+there), and a bold silhouette that still reads at 44px (the smallest avatar). The art
+was made in ChatGPT as 1254x1254 PNGs; the originals are kept outside the repo. The
+`icons/` folder keeps these clear of username-named files. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
 for the feed heading, profile name and avatar letters). Body text, statuses and controls use self-hosted Nunito
 (`public/fonts/nunito-variable.woff`, a Latin subset of the variable font limited to
