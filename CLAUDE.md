@@ -296,7 +296,7 @@ background, lighter cream panels, a warm header band on the feed, `#351709`
 headings, near-black body text, muted text `#6b625b`, a brown "Post" button with cream
 text (`--button-text`, not pure white), warm rust-brown links (`--link` `#8a3f14`, 6.6:1 on the panels; the
 keyboard focus ring has its own `--focus`), avatars with a 1px mid-brown border
-(`--avatar-border`, matching the 1px panel edges), about 12px radius, and soft warm borders and shadows. See the CSS
+(`--avatar-border`, matching the 1px panel edges), about 12px radius, text fields (the composer box and the sign-in inputs) have a stronger 1px edge (`--border-strong` `#a98258`, 3.1:1 on the panel, the WCAG minimum for a field's boundary) than the panels' `--border`, and soft warm borders and shadows. See the CSS
 variables in `src/style.css`; sizes are in `rem`, and the root font size grows
 with the viewport so desktop proportions hold. Avatar slots show the first
 letter of the display name until `/avatars/<username>.webp` exists. Chris and Sofie

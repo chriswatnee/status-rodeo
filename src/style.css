@@ -26,6 +26,8 @@
   --band: #f8e4c4;
   --input: #fbf3e8;
   --border: #e2c6a2;
+  /* Edge of a field you type in: 3.1:1 on the panel (WCAG 1.4.11); panels and dividers stay lighter. */
+  --border-strong: #a98258;
   --divider: #efd9bf;
   --text: #1b120c;
   --heading: #351709;
@@ -520,7 +522,7 @@ textarea:focus-visible {
 .login input {
   width: 100%;
   padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-small);
   background: var(--input);
   color: var(--text);
@@ -655,7 +657,7 @@ textarea:focus-visible {
   display: grid;
   gap: 0;
   min-width: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-small);
   background: var(--input);
 }
