@@ -26,7 +26,7 @@ with two users.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
   length rule, the posting logic, the avatar letter, the hat tips logic, the status id
-  parser, link detection, the composer placeholders and the RSS feeds in `tests/`.
+  parser, link detection, the profile page's feed autodiscovery, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -107,6 +107,13 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   that is passed in and builds the `Response` (`sitewideFeed()`, `userFeed()`). They live
   in `src/` on purpose: only `functions/` is scanned for routes, and the client never
   imports them. See "RSS feeds" under API.
+- `src/user-page.js` is the feed autodiscovery for a profile page (no DOM, unit tested with a
+  fake `HTMLRewriter`): `userPage()` takes the app shell the SPA fallback gives for
+  `/users/<username>`, looks the user up (one `profiles` query, 1.5 s limit) and, if they exist,
+  adds `<link rel="alternate" type="application/rss+xml" title="Name (@user) · Status Rodeo"
+  href="/users/<username>/feed.xml">` just before the sitewide one. It sends the page unchanged
+  on any problem (unknown or invalid username, failed or slow lookup, HEAD, non-HTML). The entry
+  point is `functions/users/[username]/index.js`. See "RSS feeds" under API.
 - API handlers live in `functions/api/`. The feed endpoints are `functions/feed.xml.js`
   and `functions/users/[username]/feed.xml.js` (each just creates the client and calls
   `src/feed.js`).
@@ -147,8 +154,17 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   plain-text 500 with `no-store`; an unknown user is a 404 with `max-age=60`. There is no
   Cloudflare Cache API layer: add one only if real usage shows database load.
 - Autodiscovery: `index.html` has a `<link rel="alternate" type="application/rss+xml">` for
-  `/feed.xml` on every page. Per-user autodiscovery is not built (feed readers do not run
-  the app's JavaScript, so it would need a function in front of `/users/<username>`).
+  `/feed.xml` on every page. A profile page also advertises that user's feed: a function in front of
+  `/users/<username>` (`functions/users/[username]/index.js`, logic in `src/user-page.js`) calls
+  `next()` for the app shell and, for an existing user, inserts a per-user link before the
+  sitewide one with `HTMLRewriter` (feed readers do not run the app's JavaScript, so it has to be
+  in the HTML the server sends). The function costs one small database query per full page load
+  of a profile (not for in-app navigation), is skipped for HEAD, and never breaks the page. Its
+  ETag is removed because the body is changed. `npm run dev` does not run it (like the feeds).
+  Cloudflare-only behaviour (`next()` returning the SPA fallback, `[username]/index.js` matching
+  `/users/<name>` and `/users/<name>/`, `HTMLRewriter`) cannot be run in the unit tests, so
+  check it on a preview after changing it: `curl -s https://<preview>/users/chris | grep alternate`
+  should show the user's link first, then the sitewide one, and `/users/nobody` only the sitewide one.
 - `npm run dev` does not run the feeds (like `/api/status`, `/feed.xml` returns the app
   shell); test them with `wrangler pages dev` or a Cloudflare preview. Verified in
   Cloudflare's documentation: `[username]` matches one path segment, Functions run before

@@ -13,7 +13,7 @@ const FEED_CACHE = 'public, max-age=300';
 
 // A username the feed will look up. Anything else is "not found" without asking the
 // database. (Lookups are exact, so the case must match too.)
-const USERNAME = /^[A-Za-z0-9_.-]{1,50}$/;
+export const USERNAME = /^[A-Za-z0-9_.-]{1,50}$/;
 
 function respond(request, status, body, headers) {
   return new Response(request.method === 'HEAD' ? null : body, { status, headers });
