@@ -361,7 +361,7 @@ touched, so it doesn't reload), and the link's `::after` covers the whole masthe
 picture is clickable too; its keyboard focus ring is drawn around the masthead. If you
 change the artwork, re-check where the sign is: the title's position and size are
 `--title-y` and `--title-size` in `.masthead` (desktop and the phone block). At 360px and under (very small phones)
-the side padding, the composer's avatar column and a few font sizes tighten so the
+the composer's text padding and a few font sizes tighten so the
 composer placeholder fits on one line and the "Latest first" dropdown isn't clipped.
 
 Icons for the browser tab and home screen: the star under the title on the masthead's sign, cropped
@@ -392,7 +392,9 @@ Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.9rem, between panels in both directions and under the masthead), `--inset`
 (1.3rem, side padding inside every panel, feed rows included) and `--inset-y`
 (0.85rem, top and bottom padding of the sidebar, composer and profile card, so
-their avatars line up). Use them instead of new one-off values. The sidebar
+their avatars line up). On phones (under 640px) the same variables are 1rem and 0.65rem, so the sidebar
+bar, composer and feed share one left edge (checked at 320, 360, 390 and 430px) and the composer
+matches the sidebar's height padding; the gap between panels stays 0.9rem everywhere. Use them instead of new one-off values. The sidebar
 identity block uses a tight line-height so the avatar, not the text, sets its
 row height. The sidebar identity is the avatar beside the name and @username at every
 width; there is no "View profile" link ("My profile" in the navigation goes to the same page). The page's
@@ -487,7 +489,10 @@ the live `0/280` counter at the left and the Post button at the right, and any
 error message under it. The counter is in the existing muted colour. The empty box's placeholder is a random
 line from `src/placeholders.js` each time the home page is drawn (the plain "What’s your status?"
 is not one of them), never the same line twice in a row. It is only a hint: the field's label stays
-"What's your status?". Every line is capped at 28 characters so it fits on one line on a 320px
+"What's your status?". On phones the empty box is shorter (2.9rem) and grows with the text up to
+8rem (about five lines, then it scrolls) with `field-sizing: content`; browsers without it (before Chrome 123,
+Safari 26.2, Firefox 152) keep the shorter box, which scrolls and can still be dragged taller. The text stays at
+16px or more on phones, because iOS zooms the page when a smaller field is focused. Every line is capped at 28 characters so it fits on one line on a 320px
 phone (checked in the browser at 320, 360 and 390px); keep new lines Western, mainstream (well-known cowboy phrases), short and with the curly apostrophe. Under 640px the composer's avatar is hidden (it is
 already in the sidebar bar just above) and the box takes the full width. It turns rust and bold with 20 or fewer characters left, and a
 visually hidden live region announces the remaining count there. Typing and
