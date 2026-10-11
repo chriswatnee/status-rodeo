@@ -293,8 +293,10 @@ OS or terminal looks, or an overt video-game interface.
 Current state: two-column layout (account/navigation sidebar plus main status
 column) with a palette and proportions sampled from the mockup: a tan page
 background, lighter cream panels, a warm header band on the feed, `#351709`
-headings, near-black body text, muted text `#6b625b`, a brown "Post" button,
-blue links, about 12px radius, and soft warm borders and shadows. See the CSS
+headings, near-black body text, muted text `#6b625b`, a brown "Post" button with cream
+text (`--button-text`, not pure white), warm rust-brown links (`--link` `#8a3f14`, 6.6:1 on the panels; the
+keyboard focus ring has its own `--focus`), avatars with a 1px mid-brown border
+(`--avatar-border`, matching the 1px panel edges), about 12px radius, and soft warm borders and shadows. See the CSS
 variables in `src/style.css`; sizes are in `rem`, and the root font size grows
 with the viewport so desktop proportions hold. Avatar slots show the first
 letter of the display name until `/avatars/<username>.webp` exists. Chris and Sofie
@@ -423,7 +425,7 @@ clicks navigate in the app, modified clicks are left to the browser. A trailing 
 accepted.
 
 Links in statuses: a web address in a status is a link (`a.status-link`, the normal link
-blue, underlined) on every page that shows statuses. The shown text is the address exactly
+colour, underlined) on every page that shows statuses. The shown text is the address exactly
 as typed, so the text and the destination always agree. A link to another site opens in a
 new tab with `rel="noopener noreferrer nofollow ugc"` and an `aria-label` ending "(opens
 in a new tab)" (the visible text, and so copy and paste, is unchanged); a link to this site
@@ -515,7 +517,7 @@ Target:
   words "Status Rodeo" are real text over it (the visible `h1`), so the picture has
   empty alt text. No tagline or motto.
 - Below it, a calm interface: cream/parchment background, dark brown text, rust
-  accents, blue links, subtle tan borders, restrained shadows, comfortable
+  accents, warm rust-brown links, subtle tan borders, restrained shadows, comfortable
   spacing. Western display type only for the title and a few headings; normal
   readable type for statuses and controls. Self-host any font.
 - Sidebar: account identity and navigation. Main column: composer and feed. Feed
