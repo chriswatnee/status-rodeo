@@ -26,7 +26,7 @@ with two users.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
   length rule, the posting logic, the avatar letter, the hat tips logic, the status id
-  parser, link detection, the profile page's feed autodiscovery, the composer placeholders and the RSS feeds in `tests/`.
+  parser, link detection, the profile page's feed autodiscovery, the status link previews, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
@@ -114,6 +114,17 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   href="/users/<username>/feed.xml">` just before the sitewide one. It sends the page unchanged
   on any problem (unknown or invalid username, failed or slow lookup, HEAD, non-HTML). The entry
   point is `functions/users/[username]/index.js`. See "RSS feeds" under API.
+- `src/status-page.js` is the link preview for a status address (no DOM, unit tested with a fake
+  `HTMLRewriter`): `statusPage()` takes the app shell for `/statuses/<id>`, reads the public status
+  with its author (`id, content, profiles(display_name, username)`, 1.5 s limit) and appends Open
+  Graph tags to the head: `og:title` "Status by Name (@user)", `og:description` (the status on one
+  line, cut at 200 characters), `og:url` (canonical `https://status.rodeo/statuses/<id>`),
+  `og:image` (the author's avatar, 512x512, or the mobile masthead crop if the author has no
+  avatar file), `og:site_name` and `twitter:card` `summary` (the small card). It sends the page
+  unchanged on any problem (invalid id, missing or private status, failed or slow lookup, HEAD,
+  non-HTML). The entry point is `functions/statuses/[id]/index.js`, which also checks that the
+  avatar file exists through `env.ASSETS` (a missing file answers with the HTML fallback, so only an
+  `image/` answer counts). Same pattern and caveats as `src/user-page.js`.
 - API handlers live in `functions/api/`. The feed endpoints are `functions/feed.xml.js`
   and `functions/users/[username]/feed.xml.js` (each just creates the client and calls
   `src/feed.js`).
@@ -439,6 +450,15 @@ every status row (`a.status-time` around the `<time>`, built in `createStatusRow
 link to it, so a visitor can open it, copy its address or open it in a new tab; plain
 clicks navigate in the app, modified clicks are left to the browser. A trailing slash is
 accepted.
+
+Link previews: a full load of `/statuses/<id>` for a public status carries Open Graph tags
+(see `src/status-page.js`), so a pasted link shows a small card with the author, the start of
+the text and the author's avatar in chat apps. It is the small `summary` card on purpose: a large
+card would need a separate 1200x630 image per status. In-app navigation does not change the head
+(the tags are for crawlers, which fetch the page fresh). Check it on a preview after changing it:
+`curl -s https://<preview>/statuses/<id> | grep og:` should list the tags, and a missing or private
+id none; link-preview bots cache results, so use a fresh status or each service's own debugger
+when testing.
 
 Links in statuses: a web address in a status is a link (`a.status-link`, the normal link
 colour, underlined) on every page that shows statuses. The shown text is the address exactly
