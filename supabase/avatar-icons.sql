@@ -1,15 +1,14 @@
 -- Avatar icons: every profile shows one of the site's Western icons, and its owner can
 -- change which one.
 --
--- This is a MIGRATION for the Supabase SQL editor. It is not applied automatically and
--- it is not part of schema.sql yet: schema.sql is a snapshot of the live database, so it
--- is updated after this has been applied and verified in production (run
--- avatar-icons-verify.sql afterwards).
+-- This is a MIGRATION for the Supabase SQL editor. It is not applied automatically. It was
+-- applied in production by hand (by Muse) and verified with avatar-icons-verify.sql on
+-- 2026-10-11 (20 of 20 checks); schema.sql carries the same objects as a snapshot.
 --
--- Apply it BEFORE the code that reads profiles.avatar is merged: that code selects the
--- column, and a query that names a column that does not exist fails, which would break
--- the feeds. Applying it first is harmless to the current site (it adds a column and a
--- policy that nothing uses yet).
+-- Apply it BEFORE deploying code that reads profiles.avatar: that code selects the column,
+-- and a query that names a column that does not exist fails, which would break the feeds.
+-- Applying it first is harmless to older code (it adds a column and a policy that nothing
+-- uses).
 --
 -- It can be run more than once: the column and constraint are guarded, the policy is
 -- dropped and recreated, and the privilege statements are idempotent.
