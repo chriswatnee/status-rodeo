@@ -3,7 +3,8 @@ import { supabase } from './supabase.js';
 import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
 import { submitStatus } from './post-status.js';
 import { readSortOrder, saveSortOrder } from './sort-order.js';
-import { avatarLetter } from './avatar-letter.js';
+import { AVATAR_ICONS, avatarLabel, avatarName, avatarPath } from './avatar-icons.js';
+import { setAvatar } from './set-avatar.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
@@ -336,7 +337,7 @@ function renderHome() {
     onProfile(profile) {
       if (profile) {
         composerAvatar.replaceChildren(
-          createAvatar(profile.username, profile.display_name)
+          createAvatar(profile.avatar)
         );
       } else {
         composerAvatar.replaceChildren();
@@ -488,13 +489,15 @@ function renderHome() {
       *,
       profiles (
         display_name,
-        username
+        username,
+        avatar
       )
     `,
     toRow: (status) => ({
       id: status.id,
       username: status.profiles.username,
       displayName: status.profiles.display_name,
+      avatar: status.profiles.avatar,
       content: status.content,
       createdAt: status.created_at,
     }),
@@ -525,6 +528,15 @@ async function renderUserPage(username, isCurrent) {
             </div>
           </section>
 
+          <details class="avatar-picker" id="avatar-picker" hidden>
+            <summary>${iconMarkup('edit-profile')}Change avatar</summary>
+            <div class="avatar-picker-body">
+              <p id="avatar-picker-help">Pick the icon that shows beside your name.</p>
+              <div class="avatar-choices" role="group" aria-labelledby="avatar-picker-help"></div>
+              <p class="avatar-picker-note" role="status"></p>
+            </div>
+          </details>
+
           <section class="feed-panel">
             <div class="panel-heading">
               <h2 class="panel-title">Recent Statuses</h2>
@@ -546,7 +558,7 @@ async function renderUserPage(username, isCurrent) {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('user_id, username, display_name, created_at')
+    .select('user_id, username, display_name, created_at, avatar')
     .eq('username', username)
     .single();
 
@@ -563,9 +575,8 @@ async function renderUserPage(username, isCurrent) {
   pageReady();
   profileName.textContent = profile.display_name;
   profileUsername.textContent = `@${profile.username}`;
-  profileAvatar.replaceChildren(
-    createAvatar(profile.username, profile.display_name)
-  );
+  profileAvatar.replaceChildren(createAvatar(profile.avatar));
+  setUpAvatarPicker(profile);
 
   const joined = `Joined ${new Date(profile.created_at).toLocaleDateString('en-US', {
     month: 'short',
@@ -585,6 +596,7 @@ async function renderUserPage(username, isCurrent) {
       id: status.id,
       username: profile.username,
       displayName: profile.display_name,
+      avatar: profile.avatar,
       content: status.content,
       createdAt: status.created_at,
     }),
@@ -604,6 +616,133 @@ async function renderUserPage(username, isCurrent) {
   } else if (count !== null) {
     profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
   }
+}
+
+// Says something to screen readers without showing it (the same live region that announces
+// a new page).
+function announce(text) {
+  const announcer = document.querySelector('#route-announcer');
+
+  announcer.textContent = '';
+  setTimeout(() => {
+    announcer.textContent = text;
+  }, 50);
+}
+
+// Shows one user's avatar everywhere it is on the page: the sidebar, the composer, the profile
+// card and any status rows by them. Used when you pick a new one, and to put the old one back if
+// saving fails. The shared sidebar profile is kept in step so the composer is right on the home
+// page afterwards.
+function showAvatarEverywhere(username, avatar) {
+  if (currentProfile && currentProfile.username === username) currentProfile.avatar = avatar;
+
+  for (const selector of ['#sidebar-avatar', '#composer-avatar', '#profile-avatar']) {
+    const slot = document.querySelector(selector);
+
+    if (slot && slot.childElementCount > 0) slot.replaceChildren(createAvatar(avatar));
+  }
+
+  for (const row of document.querySelectorAll('.status')) {
+    if (row.dataset.username === username) row.querySelector(':scope > .avatar')?.replaceWith(createAvatar(avatar));
+  }
+}
+
+// "Change avatar" on your own profile: a panel with the twelve icons as buttons (aria-pressed
+// marks the one in use). Tapping one saves it at once: the avatar changes everywhere right away
+// and goes back, with a message, if the save fails. One save at a time. The panel only exists
+// for the signed-in owner of the profile (the hook hides it otherwise); the database allows
+// the same and nothing more, because only your own avatar column can be updated.
+function setUpAvatarPicker(profile) {
+  const picker = document.querySelector('#avatar-picker');
+  const summary = picker.querySelector('summary');
+  const choices = picker.querySelector('.avatar-choices');
+  const note = picker.querySelector('.avatar-picker-note');
+  let saving = false;
+
+  function markChosen() {
+    for (const button of choices.children) {
+      button.setAttribute('aria-pressed', String(button.dataset.avatar === avatarName(profile.avatar)));
+    }
+  }
+
+  async function choose(name) {
+    const userId = currentSession?.user.id;
+
+    if (saving || !userId || userId !== profile.user_id) return;
+
+    if (name === avatarName(profile.avatar)) {
+      picker.open = false;
+      summary.focus();
+      return;
+    }
+
+    const previous = avatarName(profile.avatar);
+
+    saving = true;
+    picker.setAttribute('aria-busy', 'true');
+    setErrorNote(note, '');
+    profile.avatar = name;
+    showAvatarEverywhere(profile.username, name);
+    markChosen();
+
+    const result = await setAvatar(supabase, { userId, avatar: name });
+
+    saving = false;
+    picker.removeAttribute('aria-busy');
+
+    if (result.ok) {
+      picker.open = false;
+      summary.focus();
+      announce(`Avatar changed to ${avatarLabel(name).toLowerCase()}.`);
+      return;
+    }
+
+    console.error(result.error);
+    profile.avatar = previous;
+    showAvatarEverywhere(profile.username, previous);
+    markChosen();
+
+    if (result.reason === 'session-expired') {
+      // Signing out hides this panel, so the message goes with the sign-in form.
+      await expireSession();
+
+      const loginError = document.querySelector('#login-error');
+      setErrorNote(loginError, 'Your session expired. Sign in again to change your avatar.');
+      loginError.hidden = false;
+      return;
+    }
+
+    setErrorNote(note, "Couldn't save your avatar. Try again.");
+  }
+
+  for (const icon of AVATAR_ICONS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'avatar-choice';
+    button.dataset.avatar = icon.name;
+    button.title = icon.label;
+    button.setAttribute('aria-label', icon.label);
+
+    // Lazy, so the twelve files (about 340 KB) are only fetched when the panel is opened.
+    const image = new Image();
+    image.alt = '';
+    image.loading = 'lazy';
+    image.src = avatarPath(icon.name);
+    button.append(image);
+
+    button.addEventListener('click', () => choose(icon.name));
+    choices.append(button);
+  }
+
+  markChosen();
+
+  setPageHooks({
+    onSession(session) {
+      picker.hidden = session?.user.id !== profile.user_id;
+
+      if (picker.hidden) picker.open = false;
+    },
+  });
 }
 
 // One status on its own page (/statuses/<id>), the stable address for a status. It
@@ -637,7 +776,7 @@ async function renderStatusPage(segment, isCurrent) {
       () =>
         supabase
           .from('statuses')
-          .select('id, content, created_at, profiles(display_name, username)')
+          .select('id, content, created_at, profiles(display_name, username, avatar)')
           .eq('id', id)
           .eq('visibility', 'public')
           .maybeSingle(),
@@ -671,7 +810,7 @@ async function renderStatusPage(segment, isCurrent) {
       return;
     }
 
-    const { display_name: displayName, username } = status.profiles;
+    const { display_name: displayName, username, avatar } = status.profiles;
 
     document.title = `Status by ${displayName} (@${username}) · Status Rodeo`;
     pageReady();
@@ -680,6 +819,7 @@ async function renderStatusPage(segment, isCurrent) {
         id: status.id,
         username,
         displayName,
+        avatar,
         content: status.content,
         createdAt: status.created_at,
       })
@@ -957,7 +1097,7 @@ function initSidebar() {
       () =>
         supabase
           .from('profiles')
-          .select('username, display_name')
+          .select('username, display_name, avatar')
           .eq('user_id', userId)
           .single(),
       signedOutMeanwhile
@@ -977,9 +1117,7 @@ function initSidebar() {
 
     sidebarDisplayName.textContent = profile.display_name;
     sidebarUsername.textContent = `@${profile.username}`;
-    sidebarAvatar.replaceChildren(
-      createAvatar(profile.username, profile.display_name)
-    );
+    sidebarAvatar.replaceChildren(createAvatar(profile.avatar));
 
     profileLink.href = `/users/${profile.username}`;
 
@@ -1143,22 +1281,20 @@ function renderNotFound() {
   pageReady();
 }
 
-// A user's avatar, expected at /avatars/<username>.webp. While the file loads the
-// slot shows a pulsing placeholder. Once it loads the image replaces the
-// placeholder. If it fails, or takes more than a few seconds, the slot shows the
-// first letter of the display name instead. A failed load is retried twice in the
-// background, and the image replaces the letter if a retry succeeds. A user with
-// no avatar file costs two extra small requests.
-function createAvatar(username, displayName) {
-  const avatar = document.createElement('span');
-  avatar.className = 'avatar';
-  avatar.dataset.state = 'loading';
-  avatar.textContent = avatarLetter(displayName, username);
+// A user's avatar: one of the Western icons (src/avatar-icons.js), /avatars/icons/<name>.webp. A
+// value that is not one of them shows the default icon. While the file loads the slot shows a
+// pulsing placeholder; once it loads the image replaces the placeholder. If it fails, or takes
+// more than a few seconds, the slot stays a plain empty tile (there is no letter fallback) and
+// the load is retried twice in the background; the image appears if a retry succeeds.
+function createAvatar(avatar) {
+  const slot = document.createElement('span');
+  slot.className = 'avatar';
+  slot.dataset.state = 'loading';
 
-  const url = `/avatars/${encodeURIComponent(username)}.webp`;
+  const url = avatarPath(avatar);
 
   const giveUp = setTimeout(() => {
-    avatar.dataset.state = 'fallback';
+    slot.dataset.state = 'fallback';
   }, 8000);
 
   function load(attempt) {
@@ -1167,14 +1303,13 @@ function createAvatar(username, displayName) {
 
     image.addEventListener('load', () => {
       clearTimeout(giveUp);
-      avatar.textContent = '';
-      avatar.append(image);
-      avatar.dataset.state = 'loaded';
+      slot.replaceChildren(image);
+      slot.dataset.state = 'loaded';
     });
 
     image.addEventListener('error', () => {
       clearTimeout(giveUp);
-      avatar.dataset.state = 'fallback';
+      slot.dataset.state = 'fallback';
       warnImageFailed(url, attempt);
 
       if (attempt < IMAGE_RETRY_DELAYS.length) {
@@ -1187,7 +1322,7 @@ function createAvatar(username, displayName) {
 
   load(0);
 
-  return avatar;
+  return slot;
 }
 
 // An empty avatar in its loading state, for slots whose user is not known yet.
@@ -1263,9 +1398,11 @@ function fillStatusText(element, content) {
   );
 }
 
-function createStatusRow({ id, username, displayName, content, createdAt }) {
+function createStatusRow({ id, username, displayName, avatar, content, createdAt }) {
   const article = document.createElement('article');
   article.className = 'status';
+  // So a changed avatar can be swapped in on rows already on the page.
+  article.dataset.username = username;
 
   const name = document.createElement('a');
   name.className = 'status-name';
@@ -1297,7 +1434,7 @@ function createStatusRow({ id, username, displayName, content, createdAt }) {
 
   if (id !== undefined) body.append(createHatTipActions(id));
 
-  article.append(createAvatar(username, displayName), body);
+  article.append(createAvatar(avatar), body);
 
   return article;
 }

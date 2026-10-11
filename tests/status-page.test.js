@@ -30,11 +30,11 @@ class FakeRewriter {
 const shell = (headers = {}) =>
   new Response(SHELL, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', ETag: '"abc"', ...headers } });
 
-const sofie = { display_name: 'Sofie', username: 'sofie' };
+const sofie = { display_name: 'Sofie', username: 'sofie', avatar: 'cactus' };
 const rows = [
   { id: 7, content: 'Sunset over the "mesa" & a <b>big</b> sky.\nHat tip!', visibility: 'public', profiles: sofie },
   { id: 8, content: 'Secret', visibility: 'private', profiles: sofie },
-  { id: 9, content: 'No avatar here', visibility: 'public', profiles: { display_name: 'Newbie', username: 'newbie' } },
+  { id: 9, content: 'Odd avatar value', visibility: 'public', profiles: { display_name: 'Newbie', username: 'newbie', avatar: '../chris' } },
 ];
 
 function fakeSupabase({ error = null, hang = false, spy = [] } = {}) {
@@ -57,8 +57,7 @@ function fakeSupabase({ error = null, hang = false, spy = [] } = {}) {
 }
 
 const get = () => new Request('https://status.rodeo/statuses/7');
-const avatarExists = async (username) => username === 'sofie';
-const options = { Rewriter: FakeRewriter, avatarExists, timeoutMs: 50 };
+const options = { Rewriter: FakeRewriter, timeoutMs: 50 };
 
 test('a public status gets Open Graph tags: author, text, canonical url and avatar', async () => {
   const spy = [];
@@ -68,32 +67,33 @@ test('a public status gets Open Graph tags: author, text, canonical url and avat
   assert.ok(html.includes('<meta property="og:title" content="Status by Sofie (@sofie)" />'));
   assert.ok(html.includes('content="Sunset over the &quot;mesa&quot; &amp; a &lt;b&gt;big&lt;/b&gt; sky. Hat tip!"'));
   assert.ok(html.includes('<meta property="og:url" content="https://status.rodeo/statuses/7" />'));
-  assert.ok(html.includes('<meta property="og:image" content="https://status.rodeo/avatars/sofie.webp" />'));
+  assert.ok(html.includes('<meta property="og:image" content="https://status.rodeo/avatars/icons/cactus.webp" />'));
   assert.ok(html.includes('<meta property="og:image:width" content="512" />'));
+  assert.ok(html.includes('<meta property="og:image:height" content="512" />'));
+  assert.ok(html.includes('<meta property="og:image:alt" content="Sofie\'s avatar: cactus" />'));
   assert.ok(html.includes('<meta name="twitter:card" content="summary" />'));
   assert.ok(html.indexOf('og:title') < html.indexOf('</head>'));
   assert.equal(response.headers.get('ETag'), null);
   assert.deepEqual(spy[0].filters, [['id', 7], ['visibility', 'public']]);
-  assert.equal(spy[0].columns, 'id, content, profiles(display_name, username)');
+  assert.equal(spy[0].columns, 'id, content, profiles(display_name, username, avatar)');
 });
 
-test('an author without an avatar file gets the masthead picture', async () => {
+test('an avatar value that is not one of the icons shows the default icon, never another path', async () => {
   const html = await (await statusPage(fakeSupabase(), get(), '9', shell(), options)).text();
 
-  assert.ok(html.includes('content="https://status.rodeo/masthead-mobile.webp"'));
-  assert.ok(html.includes('<meta property="og:image:width" content="1250" />'));
-  assert.ok(html.includes('<meta property="og:image:alt" content="Status Rodeo" />'));
+  assert.ok(html.includes('content="https://status.rodeo/avatars/icons/cowboy-hat.webp"'));
+  assert.ok(!html.includes('chris'));
+  assert.ok(html.includes('<meta property="og:image:width" content="512" />'));
 });
 
-test('a failing avatar check falls back to the masthead picture', async () => {
-  const failing = { ...options, avatarExists: async () => { throw new Error('assets down'); } };
-  const html = await (await statusPage(fakeSupabase(), get(), '7', shell(), failing)).text();
+test('a profile without an avatar value (the column is missing or empty) shows the default icon', () => {
+  const markup = previewMarkup({ id: 1, content: 'hi', profiles: { display_name: 'Newbie', username: 'newbie' } });
 
-  assert.ok(html.includes('masthead-mobile.webp'));
+  assert.ok(markup.includes('content="https://status.rodeo/avatars/icons/cowboy-hat.webp"'));
 });
 
 test('a long status is cut with an ellipsis at the description limit', () => {
-  const markup = previewMarkup({ id: 1, content: 'a'.repeat(300), profiles: sofie }, true);
+  const markup = previewMarkup({ id: 1, content: 'a'.repeat(300), profiles: sofie });
   const description = markup.match(/og:description" content="([^"]*)"/)[1];
 
   assert.equal(description, 'a'.repeat(DESCRIPTION_LIMIT) + '…');

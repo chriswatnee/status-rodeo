@@ -2,9 +2,10 @@
 // someone pastes /statuses/<id> from the HTML the server sends (they do not run the app's
 // JavaScript), so the Cloudflare function in functions/statuses/[id]/index.js takes the app
 // shell for that address and, when the status is public, adds Open Graph tags to the head:
-// the author, the start of the text and the author's avatar. Like src/user-page.js it fails
-// soft (the page is sent unchanged on any problem) and takes the HTMLRewriter class and the
-// avatar check as arguments so it can be unit tested without Cloudflare.
+// the author, the start of the text and the author's avatar icon. Like src/user-page.js it
+// fails soft (the page is sent unchanged on any problem) and takes the HTMLRewriter class as an
+// argument so it can be unit tested without Cloudflare.
+import { avatarLabel, avatarPath } from './avatar-icons.js';
 import { SITE_URL, cleanXmlText, plainTitle, statusUrl } from './rss.js';
 import { parseStatusId } from './status-id.js';
 import { escapeAttribute } from './user-page.js';
@@ -13,9 +14,6 @@ export const LOOKUP_TIMEOUT_MS = 1500;
 
 // How much of the status the preview shows. Apps cut it themselves, usually near this length.
 export const DESCRIPTION_LIMIT = 200;
-
-// Used when the author has no avatar file (the mobile crop of the masthead, 1250x402).
-const FALLBACK_IMAGE = { path: '/masthead-mobile.webp', width: 1250, height: 402, alt: 'Status Rodeo' };
 
 function withTimeout(promise, ms) {
   let timer;
@@ -29,7 +27,7 @@ function withTimeout(promise, ms) {
 async function findStatus(supabase, id) {
   const { data, error } = await supabase
     .from('statuses')
-    .select('id, content, profiles(display_name, username)')
+    .select('id, content, profiles(display_name, username, avatar)')
     .eq('id', id)
     .eq('visibility', 'public')
     .maybeSingle();
@@ -39,13 +37,17 @@ async function findStatus(supabase, id) {
   return data;
 }
 
-// The tags for one status. `hasAvatar` says whether /avatars/<username>.webp exists.
-export function previewMarkup({ id, content, profiles: author }, hasAvatar) {
+// The tags for one status. The picture is the author's avatar icon (512x512); a value that is
+// not one of the icons shows the default icon (see src/avatar-icons.js).
+export function previewMarkup({ id, content, profiles: author }) {
   const name = author?.display_name ?? 'Status Rodeo';
   const title = author ? `Status by ${name} (@${author.username})` : 'Status';
-  const image = hasAvatar
-    ? { path: `/avatars/${encodeURIComponent(author.username)}.webp`, width: 512, height: 512, alt: `${name}'s avatar` }
-    : FALLBACK_IMAGE;
+  const image = {
+    path: avatarPath(author?.avatar),
+    width: 512,
+    height: 512,
+    alt: `${name}'s avatar: ${avatarLabel(author?.avatar).toLowerCase()}`,
+  };
   const tags = [
     ['property', 'og:type', 'website'],
     ['property', 'og:site_name', 'Status Rodeo'],
@@ -71,7 +73,7 @@ export async function statusPage(
   request,
   idText,
   response,
-  { Rewriter = globalThis.HTMLRewriter, avatarExists = async () => false, timeoutMs = LOOKUP_TIMEOUT_MS } = {}
+  { Rewriter = globalThis.HTMLRewriter, timeoutMs = LOOKUP_TIMEOUT_MS } = {}
 ) {
   if (request.method !== 'GET' || !response.ok || !Rewriter) return response;
   if (!response.headers.get('Content-Type')?.includes('text/html')) return response;
@@ -81,14 +83,9 @@ export async function statusPage(
   if (id === null) return response;
 
   let status;
-  let hasAvatar = false;
 
   try {
     status = await withTimeout(findStatus(supabase, id), timeoutMs);
-
-    if (status?.profiles?.username) {
-      hasAvatar = await withTimeout(avatarExists(status.profiles.username), timeoutMs).catch(() => false);
-    }
   } catch (error) {
     console.warn('Link preview skipped:', error);
 
@@ -97,7 +94,7 @@ export async function statusPage(
 
   if (!status) return response;
 
-  const markup = previewMarkup(status, hasAvatar);
+  const markup = previewMarkup(status);
   const rewritten = new Rewriter()
     .on('head', {
       element(element) {

@@ -8,8 +8,9 @@ import signIn from './icons/sign-in.svg?raw';
 import signOut from './icons/sign-out.svg?raw';
 import error from './icons/error.svg?raw';
 import hatTip from './icons/hat-tip.svg?raw';
+import editProfile from './icons/edit-profile.svg?raw';
 
-const icons = { home, profile, pencil, 'sign-in': signIn, 'sign-out': signOut, error, 'hat-tip': hatTip };
+const icons = { home, profile, pencil, 'sign-in': signIn, 'sign-out': signOut, error, 'hat-tip': hatTip, 'edit-profile': editProfile };
 
 // Decorative icon markup for use next to text that already names the action. The
 // SVG files are static, so inserting them as markup is safe.

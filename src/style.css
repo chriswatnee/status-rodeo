@@ -159,6 +159,7 @@ select {
 }
 
 a:focus-visible,
+summary:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -314,6 +315,7 @@ textarea:focus-visible {
 .sidebar,
 .composer,
 .profile,
+.avatar-picker,
 .notice,
 .feed-panel {
   border: 1px solid var(--border);
@@ -334,11 +336,6 @@ textarea:focus-visible {
   border: 1px solid var(--avatar-border);
   border-radius: var(--radius-avatar);
   background: var(--avatar-bg);
-  color: var(--heading);
-  font-family: var(--font-display);
-  font-size: calc(var(--avatar) * 0.45);
-  font-weight: 700;
-  line-height: 1;
 }
 
 .avatar img {
@@ -354,10 +351,6 @@ textarea:focus-visible {
 }
 
 /* Loading placeholders */
-
-.avatar[data-state='loading'] {
-  color: transparent;
-}
 
 .avatar[data-state='loading'],
 .skeleton-avatar,
@@ -759,6 +752,135 @@ textarea:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Change avatar: shown only on your own profile. A closed panel is one slim row; open, it shows
+   the twelve icons as buttons. Sizes use the shared spacing variables. */
+.avatar-picker {
+  margin-bottom: var(--gap);
+}
+
+.avatar-picker summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.35rem var(--inset);
+  color: var(--link);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.avatar-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A small chevron says the row opens. */
+.avatar-picker summary::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.15rem 0.2rem auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.avatar-picker[open] summary::after {
+  margin-bottom: -0.2rem;
+  transform: rotate(225deg);
+}
+
+.avatar-picker-body {
+  padding: 0 var(--inset) var(--inset-y);
+}
+
+.avatar-picker-body > p {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+}
+
+.avatar-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.25rem;
+}
+
+.avatar-choice {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--avatar-border);
+  border-radius: var(--radius-avatar);
+  background: var(--avatar-bg);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.avatar-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The icon in use: a ring and a check, so it is not shown by colour alone. */
+.avatar-choice[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent);
+}
+
+.avatar-choice[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff3dc' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 80% no-repeat;
+}
+
+.avatar-picker[aria-busy='true'] .avatar-choice {
+  cursor: progress;
+}
+
+.avatar-picker-note {
+  margin: 0.8rem 0 0;
+}
+
+.avatar-picker-note:empty {
+  display: none;
+}
+
+.avatar-picker-note:has(.icon-error) {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-small);
+  background: var(--warn-tint);
+  color: var(--text);
+}
+
+/* Wide enough, the twelve make two rows of six; narrower, as many as fit. */
+@media (min-width: 640px) {
+  .avatar-choices {
+    grid-template-columns: repeat(auto-fill, 4.75rem);
+    max-width: 33.5rem;
+  }
+}
+
+@media (hover: hover) {
+  .avatar-picker summary:hover {
+    text-decoration: underline;
+  }
+
+  .avatar-choice:hover {
+    border-color: var(--link);
+  }
 }
 
 /* "Page not found" and similar short pages: one panel with the display heading. */

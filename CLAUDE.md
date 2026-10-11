@@ -25,7 +25,7 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic, the avatar letter, the hat tips logic, the status id
+  length rule, the posting logic, the avatar icons and the avatar save, the hat tips logic, the status id
   parser, link detection, the profile page's feed autodiscovery, the status link previews, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
@@ -89,9 +89,17 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 - `src/placeholders.js` is the list of Western-flavoured placeholder lines for the composer and
   `pickPlaceholder()`, which chooses one at random and never the same as the last one (unit
   tested, including a length cap). `renderHome()` sets the textarea's `placeholder` from it.
-- `src/avatar-letter.js` picks the letter shown when a user has no avatar file. It
-  works on whole characters (grapheme clusters), so a name starting with an emoji
-  isn't cut in half. It has unit tests.
+- `src/avatar-icons.js` is the list of the 12 avatar icons (name and label, in picker order),
+  `DEFAULT_AVATAR` (`cowboy-hat`, the same as the database default) and `avatarName()` /
+  `avatarPath()` / `avatarLabel()`. Any value that is not one of the icons (missing, from a
+  newer or older version) becomes the default, so there is always an icon and a stored value
+  never reaches a URL unchecked. No DOM, so the functions use it too. Unit tested, including
+  that `public/avatars/icons/` holds exactly these files.
+- `src/set-avatar.js` saves the signed-in user's choice: `setAvatar()` updates only the
+  `avatar` column of their own row and checks that one row changed (a refused update is not an
+  error to PostgREST). Results are ok, `unknown` (not an icon, nothing sent), `session-expired`
+  or `failed`; never throws. Unit tested. The picker is `setUpAvatarPicker()` in `src/main.js`;
+  see "Avatar icons" under Design direction.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
@@ -116,15 +124,14 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   point is `functions/users/[username]/index.js`. See "RSS feeds" under API.
 - `src/status-page.js` is the link preview for a status address (no DOM, unit tested with a fake
   `HTMLRewriter`): `statusPage()` takes the app shell for `/statuses/<id>`, reads the public status
-  with its author (`id, content, profiles(display_name, username)`, 1.5 s limit) and appends Open
+  with its author (`id, content, profiles(display_name, username, avatar)`, 1.5 s limit) and appends Open
   Graph tags to the head: `og:title` "Status by Name (@user)", `og:description` (the status on one
   line, cut at 200 characters), `og:url` (canonical `https://status.rodeo/statuses/<id>`),
-  `og:image` (the author's avatar, 512x512, or the mobile masthead crop if the author has no
-  avatar file), `og:site_name` and `twitter:card` `summary` (the small card). It sends the page
-  unchanged on any problem (invalid id, missing or private status, failed or slow lookup, HEAD,
-  non-HTML). The entry point is `functions/statuses/[id]/index.js`, which also checks that the
-  avatar file exists through `env.ASSETS` (a missing file answers with the HTML fallback, so only an
-  `image/` answer counts). Same pattern and caveats as `src/user-page.js`.
+  `og:image` (the author's avatar icon, `/avatars/icons/<name>.webp`, 512x512; the default icon
+  for an unknown value), `og:site_name` and `twitter:card` `summary` (the small card). It sends
+  the page unchanged on any problem (invalid id, missing or private status, failed or slow
+  lookup, HEAD, non-HTML), which includes the `avatar` column not existing yet. The entry point
+  is `functions/statuses/[id]/index.js`. Same pattern and caveats as `src/user-page.js`.
 - API handlers live in `functions/api/`. The feed endpoints are `functions/feed.xml.js`
   and `functions/users/[username]/feed.xml.js` (each just creates the client and calls
   `src/feed.js`).
@@ -197,7 +204,9 @@ Tables:
   text not null (1 to 280 characters, see below), `visibility` text not null default `'public'`, `created_at`
   timestamptz default now().
 - `profiles`: `user_id` uuid primary key, `created_at` timestamptz default now(),
-  `username` text not null unique, `display_name` text not null.
+  `username` text not null unique, `display_name` text not null, and (once
+  `supabase/avatar-icons.sql` is applied, see "Avatar icons" below) `avatar` text not null
+  default `'cowboy-hat'`.
 
 Foreign keys (all NO ACTION): `statuses.user_id` references both `auth.users.id`
 and `profiles.user_id`; `profiles.user_id` references `auth.users.id`. Keep the
@@ -238,6 +247,19 @@ row must say `ok = true` and it changes nothing permanently (it only skips a cou
 `statuses` ids). The three older sections here were last checked against the live database
 on 2026-10-06, and the check constraint on 2026-10-08.
 
+Avatar icons (SQL written, NOT YET APPLIED: this section and `supabase/schema.sql` describe the
+database as it will be, so update both after it is applied and verified): `supabase/avatar-icons.sql`
+adds `profiles.avatar` (text, not null, default `'cowboy-hat'`, CHECK `profiles_avatar_check`:
+plain kebab-case, at most 40 characters; it does not list the icons, so a new icon needs no SQL),
+takes UPDATE on `profiles` away from `anon` and `authenticated` and grants `authenticated` UPDATE
+on the `avatar` column only, and adds the policy "Users can update their own profile" (`profiles`
+update, role `authenticated`, using and with check `(select auth.uid()) = user_id`). The column
+grant is what keeps `username`, `display_name`, `user_id` and `created_at` read-only. Apply it in
+the Supabase SQL editor BEFORE merging the code that selects `avatar`: a select that names a
+missing column fails, which would break every feed. `supabase/avatar-icons-verify.sql` checks it
+(every row must say `ok = true`; it rolls back everything it does). Applying it first is harmless
+to the old code.
+
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
 - "Public statuses are viewable": `statuses` select, role `public`, using
@@ -245,15 +267,16 @@ Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies
 - "Users can create their own statuses": `statuses` insert, role `authenticated`,
   with check `(select auth.uid()) = user_id`
 - "Public profiles are viewable": `profiles` select, role `public`, using `true`
-- These are the only policies on those two tables. There are no update or delete
-  policies on `statuses`, and no insert, update, or delete policies on `profiles`.
+- These are the only policies on those two tables (until the avatar SQL is applied, which adds
+  "Users can update their own profile" on `profiles`, see above). There are no update or delete
+  policies on `statuses`, and no insert or delete policies on `profiles`.
   (`hat_tips` has its own three policies, described above.)
 
 Writes through the Data API are governed only by these policies. There are no
 storage buckets, and GraphQL is disabled.
 
-The `anon` and `authenticated` roles hold every table privilege on `profiles` and
-`statuses` (the Supabase default; `hat_tips` is stricter, see above), so RLS is the only thing limiting access. Never disable
+The `anon` and `authenticated` roles hold every table privilege on `profiles` (except UPDATE, once
+the avatar SQL is applied) and `statuses` (the Supabase default; `hat_tips` is stricter, see above), so RLS is the only thing limiting access. Never disable
 RLS on these tables, and don't add broad policies without checking what they
 expose.
 
@@ -286,7 +309,7 @@ redirect URLs are configured.
   (`<span class="icon" aria-hidden="true">`), for use beside text that already
   names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
   used only beside labels of things that already work: the nav items (home,
-  profile), Post (pencil), Sign in, Sign out, the Tip your hat button (hat-tip) and
+  profile), Post (pencil), Sign in, Sign out, Change avatar (edit-profile), the Tip your hat button (hat-tip) and
   failure messages (error, via
   `setErrorNote()` and the `icon-error` class, which uses the warning colour).
   "Try again" is a plain link without an icon. Icons inside buttons take the
@@ -326,27 +349,25 @@ text (`--button-text`, not pure white), warm rust-brown links (`--link` `#8a3f14
 keyboard focus ring has its own `--focus`), avatars with a 1px mid-brown border
 (`--avatar-border`, matching the 1px panel edges), about 12px radius, text fields (the composer box and the sign-in inputs) have a stronger 1px edge (`--border-strong` `#a98258`, 3.1:1 on the panel, the WCAG minimum for a field's boundary) than the panels' `--border`, and soft warm borders and shadows. See the CSS
 variables in `src/style.css`; sizes are in `rem`, and the root font size grows
-with the viewport so desktop proportions hold. Avatar slots show the first
-letter of the display name until `/avatars/<username>.webp` exists. Chris and Sofie
-have theirs (`public/avatars/chris.webp`, `public/avatars/sofie.webp`: 512x512 RGB
-quality-92 WebPs, full-bleed artwork with its own sky background; the frame, border and
-rounded corners are CSS). A new user needs a same-named square WebP. Avatar icon set
-(assets only so far, not yet used by any page or code): 12 Western objects in
-`public/avatars/icons/<name>.webp` (bandana, cactus, cattle-skull, coffee-mug,
-coiled-rope, cowboy-boot, cowboy-hat, guitar, horseshoe, lantern, sheriff-star,
-wagon-wheel), meant to become a picker. Spec for any new icon, so the set stays
-cohesive: 512x512 square, opaque sRGB WebP (quality 90, 24-40 KB), no alpha, no baked
-border, shadow or rounded corners (CSS draws those, like the other avatars). One shared
-flat parchment background (about `#f8ce87` at the edges; backgrounds were colour-matched
-to it, only background-coloured pixels shifted); keep the outer edge quiet. One centred
-object, dark-brown outline, painterly shading lit from the upper left, small ground
-shadow, site palette, no text. Keep the object within about 72% of the width (up to 85%
-for wide ones like the hat and skull), nothing near a corner (the avatar radius clips
-there), and a bold silhouette that still reads at 44px (the smallest avatar). The art
-was made in ChatGPT as 1254x1254 PNGs; the originals are kept outside the repo. The
-`icons/` folder keeps these clear of username-named files. The display
+with the viewport so desktop proportions hold. Avatar icons: every avatar is one of 12 Western
+objects (`public/avatars/icons/<name>.webp`: bandana, cactus, cattle-skull, coffee-mug,
+coiled-rope, cowboy-boot, cowboy-hat, guitar, horseshoe, lantern, sheriff-star, wagon-wheel),
+chosen by its owner and stored in `profiles.avatar`; see `src/avatar-icons.js`. There are no
+uploads, no per-user files (the old `public/avatars/chris.webp` and `sofie.webp` were removed;
+they are in git history) and no letter fallback: a profile without a valid value shows the
+default (cowboy hat). The frame, border and rounded corners are CSS. Spec for any new icon, so the
+set stays cohesive: 512x512 square, opaque sRGB WebP (quality 90, 24-40 KB), no alpha, no baked
+border, shadow or rounded corners. One shared flat parchment background (about `#f8ce87` at the
+edges; backgrounds were colour-matched to it, only background-coloured pixels shifted); keep
+the outer edge quiet. One centred object, dark-brown outline, painterly shading lit from the
+upper left, small ground shadow, site palette, no text. Keep the object within about 72% of the
+width (up to 85% for wide ones like the hat and skull), nothing near a corner (the avatar radius
+clips there), and a bold silhouette that still reads at 44px (the smallest avatar). The art
+was made in ChatGPT as 1254x1254 PNGs; the originals are kept outside the repo. Adding an icon
+means adding the file, an entry in `AVATAR_ICONS` (the test checks the folder matches the list)
+and nothing in the database. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
-for the feed heading, profile name and avatar letters). Body text, statuses and controls use self-hosted Nunito
+for the feed heading and profile name). Body text, statuses and controls use self-hosted Nunito
 (`public/fonts/nunito-variable.woff`, a Latin subset of the variable font limited to
 weights 400-800, `--font-body`), with the system sans-serif as the fallback; form
 controls inherit it. Lora (a serif) was tried and rejected because it made the feed
@@ -465,6 +486,21 @@ smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. A
 unknown username shows "Page not found", and so does any unknown path: a panel
 (`.notice`) with the display-font heading and a link back home.
 
+Avatar picker: on your own profile only (the page hook hides it for everyone else, signed out
+included), a slim panel "Change avatar" (`<details class="avatar-picker">`, the `edit-profile`
+icon, a chevron) sits between the profile card and the feed. Open, it shows the 12 icons as
+buttons (`.avatar-choice`, `aria-label` and tooltip the icon's name, `aria-pressed` on the one
+in use, which also gets a ring and a check so it is not shown by colour alone; four columns on
+phones, up to six per row on wide screens, at least 44px each; the files load lazily, only when
+the panel is opened). Tapping one saves at once with `setAvatar()`: the avatar changes everywhere
+on the page right away (sidebar, composer, profile card and your rows, through
+`showAvatarEverywhere()`), the panel closes, focus returns to "Change avatar" and screen readers
+hear "Avatar changed to cactus." If the save fails everything goes back and the panel stays open
+with "Couldn't save your avatar. Try again."; if the login is gone you are signed out locally and
+the sign-in form says "Your session expired. Sign in again to change your avatar." One save at a
+time; tapping the icon already in use just closes the panel. Feed rows carry
+`data-username` so their avatars can be swapped.
+
 Status page: `/statuses/<id>` (`renderStatusPage()`) is the stable address of one
 status, by its numeric id so it survives a username change. It is a `.feed-panel` with
 the heading "Status" and the same status row as the feeds (hat tip included, same shared
@@ -571,12 +607,11 @@ Loading states: the masthead reserves its space (about 5.3:1, 3.1:1 on phones) w
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
 sign-in form stays hidden until the session is known. An avatar that fails or
-takes over 8 seconds falls back to its letter. A failed avatar or masthead load
-is retried twice in the background (after 1.5 s and 4 s, with a `?retry=n` query
-so a cached failure is not reused), and a retry that succeeds replaces the
-letter. Each failed attempt is logged with `console.warn` (URL and attempt number)
-to help trace why images fail. A user with no avatar file costs two extra small
-requests and warnings.
+takes over 8 seconds stays a plain empty tile (`data-state="fallback"`, no letter). A failed
+avatar or masthead load is retried twice in the background (after 1.5 s and 4 s, with a
+`?retry=n` query so a cached failure is not reused), and a retry that succeeds shows the
+image. Each failed attempt is logged with `console.warn` (URL and attempt number) to help
+trace why images fail.
 
 Target:
 - An illustrated masthead above the app. It is its own image asset, never a
@@ -592,9 +627,9 @@ Target:
   statuses. The time is a link to the status's own page but looks exactly like the plain
   muted time (same colour, size and position; the "· " dot is drawn on the link so only
   the time is underlined, and only on hover, inside the hover media query).
-- Avatars are illustrated image assets named by username (for example
-  `/avatars/<username>.webp`), chosen over a database column for now. Changing an
-  avatar or the interface must never require changing the masthead.
+- Avatars are the illustrated icon set (`/avatars/icons/<name>.webp`), picked by the user and
+  stored in `profiles.avatar`. Changing an avatar or the interface must never require changing
+  the masthead.
 - Times are relative, as in the mockup (`src/relative-time.js`, with unit tests):
   "just now", "5 minutes ago", "2 hours ago", "1 day ago" up to 6 days, then a
   plain date ("Oct 7", or "Oct 7, 2025" from another year). The exact time is in
