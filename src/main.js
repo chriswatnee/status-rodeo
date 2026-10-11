@@ -1488,7 +1488,7 @@ function refreshTimes() {
 setInterval(refreshTimes, 60 * 1000);
 
 // The masthead is an illustrated picture of a blank wooden sign (public/masthead.webp,
-// with a 2:1 crop for phones in public/masthead-mobile.webp). The words "Status Rodeo"
+// with a 3.1:1 crop for phones in public/masthead-mobile.webp). The words "Status Rodeo"
 // are real text, the page's h1, laid over the sign by the CSS, so the picture itself is
 // decorative (empty alt text). The h1 links home everywhere except the home page, and the
 // link covers the whole masthead.
@@ -1499,14 +1499,14 @@ function masthead() {
         <source
           media="(max-width: 639px)"
           srcset="/masthead-mobile.webp"
-          width="1448"
-          height="724"
+          width="1250"
+          height="402"
         />
         <img
           class="masthead-image"
           src="/masthead.webp"
-          width="2172"
-          height="724"
+          width="2142"
+          height="402"
           alt=""
           fetchpriority="high"
         />

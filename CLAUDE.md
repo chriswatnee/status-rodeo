@@ -308,16 +308,16 @@ weights 400-800, `--font-body`), with the system sans-serif as the fallback; for
 controls inherit it. Lora (a serif) was tried and rejected because it made the feed
 read like a blog, and Poppins because it was too wide for small phones. The masthead is
 a painted picture of a blank hanging wooden sign at sunset, `public/masthead.webp`
-(2172x724, 3:1, quality-90 WebP, ~200 KB; the original PNG is kept outside the repo),
+(2142x402, about 5.3:1, quality-90 WebP, ~150 KB; cropped tight to the artwork with no white margin; the original PNG is kept outside the repo),
 built by the `masthead()` helper in `src/main.js`. The words "Status Rodeo" are real
 text, not part of the picture: the page's visible `h1` (`.masthead-title`, Zilla Slab
 Bold, cream with a dark outline) is laid over the sign by the CSS, sized with container
 units (`cqw`, the masthead is a size container) so it keeps its place on the sign at every
 width. The picture is therefore decorative (`alt=""`). The masthead is a framed, rounded
 picture, not full width: it uses the panels' side margin, is centred, and stops at 1100px
-(the artwork is 2172px wide, so it stays sharp up to 2x). Under 640px a `<picture>` source
-swaps in `public/masthead-mobile.webp` (1448x724, 2:1, quality-90 WebP): the middle of the
-same artwork, full height, centred on the sign. The title links to `/` on every page except
+(the artwork is 2142px wide, so it stays sharp up to 2x). Under 640px a `<picture>` source
+swaps in `public/masthead-mobile.webp` (1250x402, 3.1:1, quality-90 WebP): the middle of the
+same artwork, full height, centred on the sign (the sign is too wide for anything squarer). The title links to `/` on every page except
 the home page (`setMastheadLink()` swaps the h1's text for a link; the picture is never
 touched, so it doesn't reload), and the link's `::after` covers the whole masthead so the
 picture is clickable too; its keyboard focus ring is drawn around the masthead. If you
@@ -490,7 +490,7 @@ result with the module's current session rather than calling `getSession()`
 again, which could answer "no session" for a moment and silently drop the
 identity. Signing out stops the retries.
 
-Loading states: the masthead reserves its 3:1 (2:1 on phones) space with dark wood colour, so the cream title is readable before the picture arrives. Avatars
+Loading states: the masthead reserves its space (about 5.3:1, 3.1:1 on phones) with dark wood colour, so the cream title is readable before the picture arrives. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
 sign-in form stays hidden until the session is known. An avatar that fails or
