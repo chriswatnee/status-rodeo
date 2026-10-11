@@ -31,7 +31,7 @@
   --divider: #efd9bf;
   --text: #1b120c;
   --heading: #351709;
-  --muted: #6b625b;
+  --muted: #6e6055;
   --link: #8a3f14;
   /* Keyboard focus ring: its own variable so it can stay stronger than a link. */
   --focus: #7a3a12;
@@ -43,7 +43,7 @@
   --button-active-bottom: #874f2f;
   --button-edge: #331407;
   --button-text: #fff3dc;
-  --nav-active: #f8d9ac;
+  --nav-active: #f8dfb8;
   --avatar-bg: #ecd3ab;
   --avatar-border: #8f6a40;
   /* Dark wood of the masthead: the loading placeholder behind the title. */
@@ -56,6 +56,8 @@
 
   --radius: 0.6rem;
   --radius-small: 0.4rem;
+  /* Avatars: a touch rounder than small controls, closer to the panels' --radius. */
+  --radius-avatar: 0.5rem;
   --radius-button: 0.3rem;
   --shadow: 0 2px 8px rgba(120, 70, 25, 0.15);
 
@@ -326,7 +328,7 @@ textarea:focus-visible {
   height: var(--avatar);
   overflow: hidden;
   border: 1px solid var(--avatar-border);
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-avatar);
   background: var(--avatar-bg);
   color: var(--heading);
   font-family: var(--font-display);
@@ -363,7 +365,7 @@ textarea:focus-visible {
 .skeleton-avatar {
   width: var(--avatar);
   height: var(--avatar);
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-avatar);
 }
 
 .skeleton-lines {
@@ -795,7 +797,7 @@ textarea:focus-visible {
 .panel-heading h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.7rem;
+  font-size: 1.5rem;
   line-height: 1.2;
   color: var(--heading);
   white-space: nowrap;
@@ -810,7 +812,7 @@ textarea:focus-visible {
   -webkit-appearance: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5z' fill='%238a3f14'/%3E%3C/svg%3E") no-repeat right 0.3rem center / 0.8rem 0.55rem;
   color: var(--link);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   cursor: pointer;
 }
 
@@ -996,7 +998,7 @@ textarea:focus-visible {
   grid-template-columns: var(--avatar) 1fr;
   gap: 1rem;
   align-items: center;
-  padding: 0.55rem var(--inset);
+  padding: 0.45rem var(--inset);
   border-top: 1px solid var(--divider);
 }
 
@@ -1193,6 +1195,13 @@ textarea:focus-visible {
 
   .app-layout {
     grid-template-columns: minmax(12rem, 22%) 1fr;
+  }
+
+  /* Feed rows use a slightly smaller avatar than the sidebar and composer; the phone sizes
+     (--avatar in the max-width blocks) are unchanged. */
+  .status,
+  .status-skeleton {
+    --avatar: 3.5rem;
   }
 
   .site-nav {

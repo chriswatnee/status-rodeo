@@ -319,8 +319,9 @@ OS or terminal looks, or an overt video-game interface.
 
 Current state: two-column layout (account/navigation sidebar plus main status
 column) with a palette and proportions sampled from the mockup: a tan page
-background, lighter cream panels, a warm header band on the feed, `#351709`
-headings, near-black body text, muted text `#6b625b`, a brown "Post" button with cream
+background, lighter cream panels, a warm header band on the feed (its heading is 1.5rem on
+screens 640px and wider), `#351709` headings, near-black body text, muted text `#6e6055`
+(a warm grey-brown, 5.3:1 on the panels), a pale peach active nav item (`--nav-active`), a brown "Post" button with cream
 text (`--button-text`, not pure white), warm rust-brown links (`--link` `#8a3f14`, 6.6:1 on the panels; the
 keyboard focus ring has its own `--focus`), avatars with a 1px mid-brown border
 (`--avatar-border`, matching the 1px panel edges), about 12px radius, text fields (the composer box and the sign-in inputs) have a stronger 1px edge (`--border-strong` `#a98258`, 3.1:1 on the panel, the WCAG minimum for a field's boundary) than the panels' `--border`, and soft warm borders and shadows. See the CSS
@@ -395,8 +396,11 @@ their avatars line up). Use them instead of new one-off values. The sidebar
 identity block uses a tight line-height so the avatar, not the text, sets its
 row height. The sidebar identity is the avatar beside the name and @username at every
 width; there is no "View profile" link ("My profile" in the navigation goes to the same page). The page's
-side margin is about 0.7rem but never under 14px, and feed rows have 0.55rem of
-vertical padding. In a feed row the avatar is top-aligned (level with the name)
+side margin is about 0.7rem but never under 14px, and feed rows have 0.45rem of
+vertical padding. Avatars have a 0.5rem radius (`--radius-avatar`, a touch rounder than small
+controls, closer to the panels' 0.6rem); in the feed rows (and their loading placeholders) they
+are 3.5rem on screens 640px and wider, while the sidebar, composer and profile card keep `--avatar`
+(4rem) so their avatars line up, and the phone sizes are unchanged. In a feed row the avatar is top-aligned (level with the name)
 while the text block is centered, so short posts look centered beside the avatar
 and long posts don't leave the avatar floating mid-row.
 
