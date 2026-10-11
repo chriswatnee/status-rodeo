@@ -363,6 +363,14 @@ change the artwork, re-check where the sign is: the title's position and size ar
 the side padding, the composer's avatar column and a few font sizes tighten so the
 composer placeholder fits on one line and the "Latest first" dropdown isn't clipped.
 
+Icons for the browser tab and home screen: the star under the title on the masthead's sign, cropped
+square from the 4284x804 upscaled artwork (so about 1:1, no upscaling) with the wood behind it.
+`public/favicon.ico` (16, 32 and 48px), `public/favicon-192.png` (192px) and
+`public/apple-touch-icon.png` (180px, full-bleed, iOS rounds the corners itself) are linked from
+`index.html`. They are static files like the avatars; the originals are kept outside the repo.
+If the artwork changes, re-crop them (star centre about x=2145, y=523 in the 4284x804 image;
+150px window for the favicon, 166px for the apple icon, which keeps the neighbouring rivets out).
+
 Page texture (experiment): the tan page background carries a faint wood grain,
 `public/textures/wood-grain.webp` (1024x1024 lossy WebP, ~65 KB, drawn at 512px so it
 is crisp on high-density screens). It is a seamless tile: the source image had a
