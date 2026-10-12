@@ -556,6 +556,11 @@ textarea:focus-visible {
   }
 }
 
+.site-nav a[data-pending] {
+  /* Holds the row's place while the profile loads; not visible, not focusable. */
+  visibility: hidden;
+}
+
 .site-nav a[aria-current='page'] {
   background: var(--nav-active);
   box-shadow:
