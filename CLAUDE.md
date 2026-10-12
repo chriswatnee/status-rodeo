@@ -409,6 +409,12 @@ square from the 4284x804 upscaled artwork (so about 1:1, no upscaling) with the 
 If the artwork changes, re-crop them (star centre about x=2145, y=523 in the 4284x804 image;
 150px window for the favicon, 166px for the apple icon, which keeps the neighbouring rivets out).
 
+Browser colour and description: `index.html` has `<meta name="theme-color" content="#f5dab3">` (the
+page background, `--bg`, so a phone's address bar and status area blend into the page; keep the two in
+step if `--bg` changes) and a `<meta name="description">` for search results and link previews of the
+home page. Both live in the app shell, so every page (profiles and statuses too) carries them;
+a status page's own Open Graph tags are added by the function on top.
+
 Page texture (experiment): the tan page background carries a faint wood grain,
 `public/textures/wood-grain.webp` (1024x1024 lossy WebP, ~65 KB, drawn at 512px so it
 is crisp on high-density screens). It is a seamless tile: the source image had a
