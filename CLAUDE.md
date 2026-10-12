@@ -767,10 +767,17 @@ Target:
   out, profile own and other, Edit profile signed in and out, a status page, not-found), with stress
   data (a 136-character unbroken word, a long URL, a 43-character display name and a 34-character
   username): no sideways scrolling anywhere, and long text wraps or is cut with an ellipsis instead
-  of overlapping. Known and accepted: the sidebar's Home / My profile / Sign out and the sort
-  dropdown are about 30px tall on phones (above WCAG 2.2 AA's 24px minimum, below the 44px
-  guideline), and the time and name links in a row are small inline links; the hat tip and "Show
-  older" have an invisible 44px area. To re-check after a layout change, open each page at those
+  of overlapping. Tap targets on phones (changed 2026-10-12, no visible change): the sidebar's Home /
+  My profile / Sign out have a transparent `::after` layer (`inset: -0.45rem -0.2rem`) and are about
+  46px tall to tap; the sort dropdown, the "Back to my profile" link and the "Try again" buttons use
+  padding with an equal negative margin (layout unchanged, the padding is tappable) for 44px or more;
+  the name and the time in a feed row do the same but are only about 36 to 40px, because the status
+  text starts right under the header and the previous row's hat tip sits above (the padding is 0.9rem
+  above and 0.3rem below, and anything later in the page, such as the status text and its links, is
+  painted over it, so a link inside a status is never covered). Don't use a positioned `::after` on the
+  name or time: it would paint above the status text. The hat tip, the "…" button and "Show older" have
+  an invisible 44px area. Re-check after changing a row's header: elementFromPoint at the edges of the
+  hat tip, the "…" button and a link inside a status must still hit them. To re-check after a layout change, open each page at those
   four widths and compare `document.documentElement.scrollWidth` with `clientWidth` (they must be
   equal), with a long unbroken word and a long display name in the data.
 
