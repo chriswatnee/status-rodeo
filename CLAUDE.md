@@ -440,7 +440,8 @@ bar, composer and feed share one left edge (checked at 320, 360, 390 and 430px) 
 matches the sidebar's height padding; the gap between panels stays 0.9rem everywhere. Use them instead of new one-off values. The sidebar
 identity block uses a tight line-height so the avatar, not the text, sets its
 row height. The sidebar identity is the avatar beside the name and @username at every
-width; there is no "View profile" link ("My profile" in the navigation goes to the same page). The page's
+width (each on one line, cut off with an ellipsis if very long; its grid column is
+`minmax(0, 1fr)`, because an auto column grows to fit a long username and pushes it out of the card); there is no "View profile" link ("My profile" in the navigation goes to the same page). The page's
 side margin is about 0.7rem but never under 14px, and feed rows have 0.45rem of
 vertical padding. Avatars have a 0.5rem radius (`--radius-avatar`, a touch rounder than small
 controls, closer to the panels' 0.6rem); in the feed rows (and their loading placeholders) they
@@ -490,7 +491,10 @@ if it fails). The tab title is "Display name (@username) · Status Rodeo". The
 feed shows that user's latest 5 public statuses, or "Name hasn't posted yet.",
 or "Couldn't load statuses." if the query fails. The line stays on one row so the
 card is only as tall as the avatar and lines up with the sidebar: on phones it is
-smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. An
+smaller (0.82rem; 0.78rem at 360px and under), at 340px and under the word "Joined" is dropped
+from view (it is its own `span.joined-word`, kept for screen readers, and `.profile p` is
+`position: relative` so it stays inside the clip), which makes the usual line fit at 320, 360, 390
+and 430px; if it still doesn't fit (a very long username) it is cut off with an ellipsis. An
 unknown username shows "Page not found", and so does any unknown path: a panel
 (`.notice`) with the display-font heading and a link back home.
 
@@ -655,8 +659,16 @@ Target:
   the `<time>` element's tooltip (`title`) and `datetime`. Visible times refresh
   every minute while a page stays open.
 - The mobile layout is designed deliberately, not by scaling the desktop layout
-  down. The masthead crop is done; the column collapse and the rest of the phone
-  layout are still to be reviewed.
+  down. It was reviewed on 2026-10-11 at 320, 360, 390 and 430px on every page (home signed in and
+  out, profile own and other, Edit profile signed in and out, a status page, not-found), with stress
+  data (a 136-character unbroken word, a long URL, a 43-character display name and a 34-character
+  username): no sideways scrolling anywhere, and long text wraps or is cut with an ellipsis instead
+  of overlapping. Known and accepted: the sidebar's Home / My profile / Sign out and the sort
+  dropdown are about 30px tall on phones (above WCAG 2.2 AA's 24px minimum, below the 44px
+  guideline), and the time and name links in a row are small inline links; the hat tip and "Show
+  older" have an invisible 44px area. To re-check after a layout change, open each page at those
+  four widths and compare `document.documentElement.scrollWidth` with `clientWidth` (they must be
+  equal), with a long unbroken word and a long display name in the data.
 
 A mockup is a visual reference, not a feature list. These controls appear in it
 but are not built, and are not to be added without asking: Settings, a "Post a
