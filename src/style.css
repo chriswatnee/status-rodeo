@@ -391,13 +391,16 @@ textarea:focus-visible {
     boot-pulse 1.4s ease-in-out 0.9s infinite;
 }
 
-/* One rust dot, drawn in CSS (a vector, sharp at any size). */
-.boot-dot {
+/* One rust five-point star (the logo), an inline vector so it is sharp at any size. The stroke
+   in the same colour softens the points. */
+.boot-star {
   display: block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent);
+  width: 36px;
+  height: 36px;
+  fill: var(--accent);
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
 @keyframes boot-in {
