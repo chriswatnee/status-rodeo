@@ -100,6 +100,11 @@ let navigation = 0;
 let announceNext = false;
 let pageHooks = {};
 let authKnown = false;
+// Resolves when the signed-in state is first known (see revealWhenFontsReady()).
+let markAuthKnown;
+const authReady = new Promise((resolve) => {
+  markAuthKnown = resolve;
+});
 let currentSession = null;
 // undefined until the signed-in user's profile loads; null if it failed.
 let currentProfile;
@@ -1267,6 +1272,9 @@ function initSidebar() {
     if (error) {
       console.error(error);
       currentProfile = null;
+      sidebarProfile.hidden = true;
+      profileLink.hidden = true;
+      delete profileLink.dataset.pending;
       profileErrorNote.hidden = false;
       pageHooks.onProfile?.(null);
       return;
@@ -1280,6 +1288,7 @@ function initSidebar() {
 
     sidebarProfile.hidden = false;
     profileLink.hidden = false;
+    delete profileLink.dataset.pending;
 
     currentProfile = profile;
     updateNav();
@@ -1289,6 +1298,7 @@ function initSidebar() {
 
   function updateAuthUI(session) {
     authKnown = true;
+    markAuthKnown();
     currentSession = session;
     if (!session) currentProfile = undefined;
 
@@ -1302,6 +1312,15 @@ function initSidebar() {
       authSeparator.hidden = false;
       authStatus.textContent = 'Signed in';
 
+      // Keep the identity row's space while the profile loads (an empty avatar tile and an
+      // invisible "My profile" link), so the page below doesn't jump down when it arrives.
+      if (sidebarProfile.hidden) {
+        sidebarAvatar.replaceChildren(createLoadingAvatar());
+        sidebarProfile.hidden = false;
+        profileLink.hidden = false;
+        profileLink.dataset.pending = 'true';
+      }
+
       loadProfile(session.user.id);
     } else {
       loginSection.hidden = false;
@@ -1312,6 +1331,7 @@ function initSidebar() {
       sidebarProfile.hidden = true;
       profileErrorNote.hidden = true;
       profileLink.hidden = true;
+      delete profileLink.dataset.pending;
       updateNav();
 
       sidebarDisplayName.textContent = '';
@@ -2507,7 +2527,7 @@ function setMastheadLink(linkHome) {
   }
 }
 
-// The app stays hidden (in the page colour) until the two fonts are ready, then fades in,
+// The app stays hidden (in the page colour) until the two fonts are ready and the signed-in state is known, then fades in,
 // so text never shows in a fallback font and jumps. `fonts-pending` is set on <html> in
 // index.html. Gives up after 2.5 s (the fonts are preloaded, so this is rare) and shows the
 // page anyway; with `font-display: block` it then re-draws when the fonts arrive.
@@ -2518,7 +2538,7 @@ function revealWhenFontsReady() {
   if (!fonts?.load) return reveal();
 
   Promise.race([
-    Promise.all([fonts.load("700 1em 'Zilla Slab'"), fonts.load("400 1em 'Nunito'")]),
+    Promise.all([fonts.load("700 1em 'Zilla Slab'"), fonts.load("400 1em 'Nunito'"), authReady]),
     new Promise((resolve) => setTimeout(resolve, 2500)),
   ]).then(reveal, reveal);
 }
