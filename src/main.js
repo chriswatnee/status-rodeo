@@ -1,11 +1,12 @@
 import './style.css';
 import { supabase } from './supabase.js';
-import { STATUS_LIMIT, countCharacters, truncateToLimit } from './status-limit.js';
+import { STATUS_LIMIT, countCharacters, truncateToLimit, validateStatus } from './status-limit.js';
 import { submitStatus } from './post-status.js';
 import { readSortOrder, saveSortOrder } from './sort-order.js';
 import { AVATAR_ICONS, avatarLabel, avatarName, avatarPath } from './avatar-icons.js';
 import { setAvatar } from './set-avatar.js';
 import { deleteStatus } from './delete-status.js';
+import { updateStatus } from './update-status.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
@@ -279,6 +280,60 @@ function updateNav() {
   }
 }
 
+// Typing and pasting into a status box stop at the 280-character limit. beforeinput lets the part
+// of an insertion that fits go in, without removing any text that is already there. Shared by the
+// composer and the editor on your own statuses.
+function limitTyping(textarea) {
+  textarea.addEventListener('beforeinput', (event) => {
+    if (event.isComposing || !event.inputType.startsWith('insert')) {
+      return;
+    }
+
+    let text = event.data ?? event.dataTransfer?.getData('text/plain') ?? '';
+
+    if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
+      text = '\n';
+    }
+
+    if (!text) {
+      return;
+    }
+
+    const { value, selectionStart, selectionEnd } = textarea;
+    const room =
+      STATUS_LIMIT -
+      countCharacters(value) +
+      countCharacters(value.slice(selectionStart, selectionEnd));
+
+    if (countCharacters(text) <= room) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const fitted = truncateToLimit(text, room);
+
+    if (fitted) {
+      textarea.setRangeText(fitted, selectionStart, selectionEnd, 'end');
+    }
+
+    textarea.dispatchEvent(new Event('input'));
+  });
+
+  textarea.addEventListener('input', () => {
+    // Safety net for input that beforeinput cannot cancel (IME, drag and drop).
+    if (countCharacters(textarea.value) > STATUS_LIMIT) {
+      const caret = textarea.selectionStart;
+
+      textarea.value = truncateToLimit(textarea.value);
+      textarea.setSelectionRange(
+        Math.min(caret, textarea.value.length),
+        Math.min(caret, textarea.value.length)
+      );
+    }
+  });
+}
+
 // The composer hint is a random line from src/placeholders.js, different from the last one.
 let lastPlaceholder = null;
 
@@ -381,56 +436,10 @@ function renderHome() {
     }, 500);
   }
 
-  // Typing and pasting stop at the limit. beforeinput lets the part of an
-  // insertion that fits go in, without removing any text that is already there.
-  statusInput.addEventListener('beforeinput', (event) => {
-    if (event.isComposing || !event.inputType.startsWith('insert')) {
-      return;
-    }
-
-    let text = event.data ?? event.dataTransfer?.getData('text/plain') ?? '';
-
-    if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
-      text = '\n';
-    }
-
-    if (!text) {
-      return;
-    }
-
-    const { value, selectionStart, selectionEnd } = statusInput;
-    const room =
-      STATUS_LIMIT -
-      countCharacters(value) +
-      countCharacters(value.slice(selectionStart, selectionEnd));
-
-    if (countCharacters(text) <= room) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const fitted = truncateToLimit(text, room);
-
-    if (fitted) {
-      statusInput.setRangeText(fitted, selectionStart, selectionEnd, 'end');
-    }
-
-    statusInput.dispatchEvent(new Event('input'));
-  });
+  // Typing and pasting stop at the limit (see limitTyping).
+  limitTyping(statusInput);
 
   statusInput.addEventListener('input', () => {
-    // Safety net for input that beforeinput cannot cancel (IME, drag and drop).
-    if (countCharacters(statusInput.value) > STATUS_LIMIT) {
-      const caret = statusInput.selectionStart;
-
-      statusInput.value = truncateToLimit(statusInput.value);
-      statusInput.setSelectionRange(
-        Math.min(caret, statusInput.value.length),
-        Math.min(caret, statusInput.value.length)
-      );
-    }
-
     composerNote.textContent = '';
     updateCounter();
   });
@@ -506,6 +515,7 @@ function renderHome() {
       avatar: status.profiles.avatar,
       content: status.content,
       createdAt: status.created_at,
+      editedAt: status.edited_at,
     }),
     emptyMessage: 'No statuses yet.',
   });
@@ -625,7 +635,7 @@ async function renderUserPage(username, isCurrent) {
     more: feedMore,
     sortSelect: document.querySelector('.sort-select'),
     title: document.querySelector('.panel-title'),
-    select: 'id, content, created_at',
+    select: 'id, content, created_at, edited_at',
     filter: (query) => query.eq('user_id', profile.user_id),
     toRow: (status) => ({
       id: status.id,
@@ -634,6 +644,7 @@ async function renderUserPage(username, isCurrent) {
       avatar: profile.avatar,
       content: status.content,
       createdAt: status.created_at,
+      editedAt: status.edited_at,
     }),
     emptyMessage: `${profile.display_name} hasn't posted yet.`,
   });
@@ -906,7 +917,7 @@ async function renderStatusPage(segment, isCurrent) {
       () =>
         supabase
           .from('statuses')
-          .select('id, content, created_at, profiles(display_name, username, avatar)')
+          .select('id, content, created_at, edited_at, profiles(display_name, username, avatar)')
           .eq('id', id)
           .eq('visibility', 'public')
           .maybeSingle(),
@@ -952,6 +963,7 @@ async function renderStatusPage(segment, isCurrent) {
         avatar,
         content: status.content,
         createdAt: status.created_at,
+        editedAt: status.edited_at,
       })
     );
     syncStatusMenus();
@@ -1612,7 +1624,25 @@ async function resolveMentions() {
   }
 }
 
-function createStatusRow({ id, username, displayName, avatar, content, createdAt }) {
+// The text and edit time each row shows, so the editor starts from what is on screen.
+const statusTexts = new WeakMap();
+
+// "· edited" after the time, on a status whose text was changed after posting. Plain text (not a
+// <time>, so the minute refresh leaves it alone); the tooltip has when. `sub` is passed while the
+// row is being built, before it is in the page.
+function setEditedLabel(row, editedAt, sub = row.querySelector('.status-sub')) {
+  sub.querySelector('.status-edited')?.remove();
+
+  if (!editedAt) return;
+
+  const label = document.createElement('span');
+  label.className = 'status-edited';
+  label.textContent = 'edited';
+  label.title = `Edited ${absoluteTime(editedAt)}`;
+  sub.append(label);
+}
+
+function createStatusRow({ id, username, displayName, avatar, content, createdAt, editedAt = null }) {
   const article = document.createElement('article');
   article.className = 'status';
   // So a changed avatar can be swapped in on rows already on the page.
@@ -1652,9 +1682,12 @@ function createStatusRow({ id, username, displayName, avatar, content, createdAt
   }
 
   meta.append(name, sub);
+  setEditedLabel(article, editedAt, sub);
 
   const paragraph = document.createElement('p');
   fillStatusText(paragraph, content);
+  // What the row currently shows, for the editor (see startEdit).
+  statusTexts.set(article, { content, editedAt });
 
   const body = document.createElement('div');
   body.className = 'status-body';
@@ -1864,14 +1897,25 @@ function createStatusMenu(row) {
   list.setAttribute('aria-label', 'Your status');
   list.hidden = true;
 
+  const editItem = document.createElement('button');
+  editItem.type = 'button';
+  editItem.className = 'status-menu-item status-menu-edit';
+  editItem.setAttribute('role', 'menuitem');
+  editItem.innerHTML = `${iconMarkup('pencil')}<span>Edit</span>`;
+
   const deleteItem = document.createElement('button');
   deleteItem.type = 'button';
   deleteItem.className = 'status-menu-item status-menu-delete';
   deleteItem.setAttribute('role', 'menuitem');
   deleteItem.innerHTML = `${iconMarkup('delete')}<span>Delete</span>`;
 
-  list.append(deleteItem);
+  list.append(editItem, deleteItem);
   wrap.append(button, list);
+
+  editItem.addEventListener('click', () => {
+    closeStatusMenu(wrap);
+    startEdit(row, button);
+  });
 
   deleteItem.addEventListener('click', () => {
     closeStatusMenu(wrap);
@@ -1993,10 +2037,227 @@ function syncStatusMenus() {
       row.querySelector('.status-meta').after(createStatusMenu(row));
     } else if (!mine && menu) {
       menu.remove();
-      row.classList.remove('has-menu');
+      row.classList.remove('has-menu', 'editing');
       row.querySelector('.status-confirm')?.remove();
+
+      // An unsaved edit goes with the sign-in it belonged to.
+      if (row.querySelector('.status-edit')) {
+        row.querySelector('.status-edit').remove();
+        row.querySelector('.status-body > p').hidden = false;
+      }
     }
   }
+}
+
+// The editor for your own status: the text in the same kind of box as the composer, with the
+// counter, Save and Cancel, in place of the status text. Save stays disabled until the text is
+// valid (1 to 280 characters, not blank) and different from what is saved; Ctrl+Enter (Cmd+Enter
+// on a Mac) saves; Escape and Cancel put things back. While saving, the text is read-only and the
+// button says "Saving…". A failure keeps the editor and the text.
+let statusEditSerial = 0;
+
+function startEdit(row, menuButton) {
+  const existing = row.querySelector('.status-edit');
+
+  if (existing) {
+    existing.querySelector('textarea').focus();
+    return;
+  }
+
+  row.querySelector('.status-confirm')?.remove();
+
+  const paragraph = row.querySelector('.status-body > p');
+  const saved = statusTexts.get(row);
+  const serial = ++statusEditSerial;
+
+  const form = document.createElement('form');
+  form.className = 'status-edit';
+  form.noValidate = true;
+
+  const box = document.createElement('div');
+  box.className = 'composer-fields';
+
+  const label = document.createElement('label');
+  label.className = 'visually-hidden';
+  label.htmlFor = `status-edit-text-${serial}`;
+  label.textContent = 'Edit your status';
+
+  const input = document.createElement('textarea');
+  input.id = `status-edit-text-${serial}`;
+  input.rows = 3;
+  input.value = saved.content;
+  input.setAttribute('aria-describedby', `status-edit-help-${serial}`);
+  input.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
+
+  const help = document.createElement('span');
+  help.id = `status-edit-help-${serial}`;
+  help.className = 'visually-hidden';
+  help.textContent = `${STATUS_LIMIT} characters maximum.`;
+
+  const counter = document.createElement('span');
+  counter.className = 'char-count';
+  counter.setAttribute('aria-hidden', 'true');
+
+  const saveButton = document.createElement('button');
+  saveButton.type = 'submit';
+  saveButton.className = 'edit-save';
+  saveButton.textContent = 'Save';
+  saveButton.disabled = true;
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'edit-cancel';
+  cancelButton.textContent = 'Cancel';
+
+  const buttons = document.createElement('div');
+  buttons.className = 'status-edit-buttons';
+  buttons.append(saveButton, cancelButton);
+
+  const actions = document.createElement('div');
+  actions.className = 'composer-actions';
+  actions.append(counter, buttons);
+
+  box.append(label, input, help, actions);
+
+  const note = document.createElement('div'); // a live region: failures are read out
+  note.className = 'status-edit-note';
+  note.setAttribute('role', 'status');
+
+  const announce = document.createElement('div'); // "n characters left", only near the limit
+  announce.className = 'visually-hidden';
+  announce.setAttribute('role', 'status');
+
+  form.append(box, note, announce);
+
+  paragraph.hidden = true;
+  paragraph.after(form);
+  row.classList.add('editing');
+
+  limitTyping(input);
+
+  let saving = false;
+  let announceTimer;
+
+  function refresh() {
+    const count = countCharacters(input.value);
+    const remaining = STATUS_LIMIT - count;
+    const checked = validateStatus(input.value);
+
+    counter.textContent = `${count}/${STATUS_LIMIT}`;
+    counter.classList.toggle('char-count-near', remaining <= 20);
+    saveButton.disabled = saving || !checked.ok || checked.content === saved.content;
+
+    // Screen readers hear nothing until the limit is close, and then only the settled value.
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      if (remaining > 20) announce.textContent = '';
+      else if (remaining <= 0) announce.textContent = 'Character limit reached.';
+      else announce.textContent = `${remaining} characters left.`;
+    }, 500);
+  }
+
+  function close(returnFocus) {
+    clearTimeout(announceTimer);
+    form.remove();
+    paragraph.hidden = false;
+    row.classList.remove('editing');
+
+    if (returnFocus && menuButton.isConnected) menuButton.focus();
+  }
+
+  function setSaving(busy) {
+    saving = busy;
+    input.readOnly = busy;
+    cancelButton.disabled = busy;
+
+    if (busy) {
+      saveButton.style.width = `${saveButton.getBoundingClientRect().width}px`;
+      saveButton.textContent = 'Saving…';
+      saveButton.setAttribute('aria-busy', 'true');
+    } else {
+      saveButton.textContent = 'Save';
+      saveButton.removeAttribute('aria-busy');
+      saveButton.style.width = '';
+    }
+
+    refresh();
+  }
+
+  async function save() {
+    if (saving || saveButton.disabled) return;
+
+    setSaving(true);
+    note.textContent = '';
+
+    const result = await updateStatus(supabase, { id: Number(row.dataset.statusId), content: input.value });
+
+    // Signed out (which removes the editor) or moved on while it was saving.
+    if (!form.isConnected) {
+      if (result.reason === 'session-expired') showSessionExpired('save your edit');
+      return;
+    }
+
+    if (result.ok) {
+      statusTexts.set(row, { content: result.content, editedAt: result.editedAt });
+      fillStatusText(paragraph, result.content);
+      setEditedLabel(row, result.editedAt);
+      close(true);
+      resolveMentions();
+      announceStatus('Status saved.');
+      return;
+    }
+
+    setSaving(false);
+
+    if (result.reason === 'session-expired') {
+      showSessionExpired('save your edit');
+      return;
+    }
+
+    if (result.reason === 'gone') {
+      setErrorNote(note, 'This status no longer exists.');
+      return;
+    }
+
+    if (result.reason === 'failed') console.error(result.error);
+
+    setErrorNote(note, "Couldn't save your edit. Try again.");
+  }
+
+  input.addEventListener('input', () => {
+    note.textContent = '';
+    refresh();
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    save();
+  });
+
+  // Ctrl+Enter (Cmd+Enter on a Mac) saves, like the composer. Plain Enter is a new line. Not while
+  // an input method is composing text, and not for a held-down key.
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || event.isComposing || event.repeat) return;
+
+    event.preventDefault();
+    save();
+  });
+
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !saving) {
+      event.preventDefault();
+      close(true);
+    }
+  });
+
+  cancelButton.addEventListener('click', () => {
+    if (!saving) close(true);
+  });
+
+  refresh();
+  announce.textContent = '';
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 
 // The question under the status text: "Delete this status?" with Delete and Cancel. Cancel has the
@@ -2074,7 +2335,7 @@ function showDeleteConfirm(row, menuButton) {
 
     // The visitor may have moved on, or signed out (which removes the question), meanwhile.
     if (!confirm.isConnected && !result.ok) {
-      if (result.reason === 'session-expired') showSessionExpiredForDelete();
+      if (result.reason === 'session-expired') showSessionExpired('delete your status');
       return;
     }
 
@@ -2090,7 +2351,7 @@ function showDeleteConfirm(row, menuButton) {
     cancelButton.disabled = false;
 
     if (result.reason === 'session-expired') {
-      showSessionExpiredForDelete();
+      showSessionExpired('delete your status');
       return;
     }
 
@@ -2100,11 +2361,11 @@ function showDeleteConfirm(row, menuButton) {
 }
 
 // The login is gone: sign out here and say so in the sign-in form, like the other saves.
-async function showSessionExpiredForDelete() {
+async function showSessionExpired(what) {
   await expireSession();
 
   const loginError = document.querySelector('#login-error');
-  setErrorNote(loginError, 'Your session expired. Sign in again to delete your status.');
+  setErrorNote(loginError, `Your session expired. Sign in again to ${what}.`);
   loginError.hidden = false;
 }
 

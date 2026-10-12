@@ -1294,6 +1294,18 @@ textarea:focus-visible {
   content: '· ';
 }
 
+/* "· edited" after the time on a status whose text was changed after posting. */
+.status-edited {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.status-edited::before {
+  content: '· ';
+}
+
 @media (hover: hover) {
   .status-time:hover time {
     text-decoration: underline;
@@ -1516,6 +1528,75 @@ textarea:focus-visible {
   .status-menu-item:hover {
     background: var(--nav-active);
   }
+}
+
+/* Editing your own status: the same kind of box as the composer, in place of the text. */
+.status-edit {
+  margin-top: 0.3rem;
+}
+
+.status-edit textarea {
+  width: 100%;
+  min-height: 5.2rem;
+  max-height: 14rem;
+  padding: 0.7rem 0.9rem 0.3rem;
+  border: 0;
+  border-radius: var(--radius-small) var(--radius-small) 0 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.05rem;
+  field-sizing: content;
+  resize: vertical;
+}
+
+/* The box draws the ring, not the field inside it. */
+.status-edit textarea:focus-visible {
+  outline: none;
+}
+
+.status-edit-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* The box is narrow beside the avatar on phones: the counter and the buttons wrap
+   rather than push Cancel out of the box. */
+.status-edit .composer-actions {
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.status-edit .edit-save,
+.status-edit .edit-cancel {
+  padding-inline: 0.85rem;
+}
+
+.status-edit .edit-cancel {
+  padding-inline: calc(0.85rem - 2px);
+}
+
+.status-edit .status-edit-buttons {
+  margin-left: auto;
+}
+
+.status-edit-note {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.status-edit-note:empty {
+  display: none;
+}
+
+.status-edit-note:has(.icon-error) {
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-small);
+  background: var(--warn-tint);
+}
+
+/* While editing, the "…" menu is out of the way. */
+.status.editing .status-menu {
+  display: none;
 }
 
 /* "Delete this status?" under the status text. */
@@ -1783,6 +1864,7 @@ textarea:focus-visible {
 
   /* So "Chris @chris · 3 days ago" fits a row without cutting a short name or @name. */
   .status-handle,
+  .status-edited,
   .status-meta time,
   .status-time {
     font-size: 0.88rem;
