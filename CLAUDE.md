@@ -417,21 +417,9 @@ step if `--bg` changes) and a `<meta name="description">` for search results and
 home page. Both live in the app shell, so every page (profiles and statuses too) carries them;
 a status page's own Open Graph tags are added by the function on top.
 
-Page texture (experiment): the tan page background carries a faint wood grain,
-`public/textures/wood-grain.webp` (1024x1024 lossy WebP, ~65 KB, drawn at 512px so it
-is crisp on high-density screens). It is a seamless tile: the source image had a
-visible left/right seam, which was cross-faded away before encoding, and its mean
-colour was shifted to `--bg` so the page colour does not change. Lossy WebP adds a
-small error at a tile's edge, so re-check the seams (compare the pixel difference
-across the tile edge with the difference between ordinary neighbouring columns)
-whenever the image is re-encoded, and resize it from a wrapped copy, never plain.
-It lives in `:root` in `src/style.css`: `--page-texture` (the image, `none` restores
-the flat background), `--wood-veil` (how much flat tan is laid over the grain, 60%;
-higher is fainter, 100% is flat) and `--wood-tile` (512px). Only the page background
-uses it; the masthead, panels and text are unchanged. Both background layers must keep `repeat`: the page background is only
-as tall as the content, so a non-repeating veil stops there and the grain below it shows at
-full strength (this was a bug in the first version). `html` also has `min-height: 100%` so the background is at least as tall as the screen on short pages. `color-mix()` is needed for the
-veil; a browser without it drops the declaration and shows the flat tan.
+Page background: flat `--bg` (`#f5dab3`), the same value as the `theme-color` meta, so a phone's
+address bar blends into the page. A faint wood-grain tile was tried and removed on 2026-10-12 (it is in
+git history); `html` keeps `min-height: 100%` so the colour covers short pages.
 
 Spacing: panels share three variables in `:root` (`src/style.css`): `--gap`
 (0.9rem, between panels in both directions and under the masthead), `--inset`
