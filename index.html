@@ -34,6 +34,30 @@
       <svg class="boot-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polygon points="12.00,1.00 14.70,8.28 22.46,8.60 16.37,13.42 18.47,20.90 12.00,16.60 5.53,20.90 7.63,13.42 1.54,8.60 9.30,8.28" /></svg>
       <span class="visually-hidden">Loading Status Rodeo…</span>
     </div>
+    <!-- Safety net, independent of the app's own script: if the page is still held back (the star
+         is showing) after 6 s, stop waiting. If the app never drew anything, say so and offer a
+         reload instead of pulsing forever. -->
+    <script>
+      setTimeout(function () {
+        var root = document.documentElement;
+        if (!root.classList.contains('fonts-pending')) return;
+        root.classList.remove('fonts-pending');
+        var app = document.getElementById('app');
+        if (!app || app.firstChild) return;
+        var box = document.createElement('div');
+        box.style.cssText = 'padding:4rem 1rem;text-align:center;font:1rem/1.5 system-ui,sans-serif;color:#351709';
+        var text = document.createElement('p');
+        text.textContent = "Couldn\u2019t load Status Rodeo.";
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Reload the page';
+        button.style.cssText = 'font:inherit;padding:0.6rem 1.2rem;cursor:pointer';
+        button.addEventListener('click', function () { location.reload(); });
+        box.appendChild(text);
+        box.appendChild(button);
+        app.appendChild(box);
+      }, 6000);
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
