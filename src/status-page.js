@@ -6,9 +6,9 @@
 // fails soft (the page is sent unchanged on any problem) and takes the HTMLRewriter class as an
 // argument so it can be unit tested without Cloudflare.
 import { avatarLabel, avatarPath } from './avatar-icons.js';
-import { SITE_URL, cleanXmlText, plainTitle, statusUrl } from './rss.js';
+import { PREVIEW_TAGS_SELECTOR, previewTagsMarkup } from './preview-tags.js';
+import { cleanXmlText, plainTitle, statusUrl } from './rss.js';
 import { parseStatusId } from './status-id.js';
-import { escapeAttribute } from './user-page.js';
 
 export const LOOKUP_TIMEOUT_MS = 1500;
 
@@ -41,30 +41,14 @@ async function findStatus(supabase, id) {
 // not one of the icons shows the default icon (see src/avatar-icons.js).
 export function previewMarkup({ id, content, profiles: author }) {
   const name = author?.display_name ?? 'Status Rodeo';
-  const title = author ? `Status by ${name} (@${author.username})` : 'Status';
-  const image = {
-    path: avatarPath(author?.avatar),
-    width: 512,
-    height: 512,
-    alt: `${name}'s avatar: ${avatarLabel(author?.avatar).toLowerCase()}`,
-  };
-  const tags = [
-    ['property', 'og:type', 'website'],
-    ['property', 'og:site_name', 'Status Rodeo'],
-    ['property', 'og:title', title],
-    ['property', 'og:description', plainTitle(cleanXmlText(content), DESCRIPTION_LIMIT)],
-    ['property', 'og:url', statusUrl(id)],
-    ['property', 'og:image', SITE_URL + image.path],
-    ['property', 'og:image:width', String(image.width)],
-    ['property', 'og:image:height', String(image.height)],
-    ['property', 'og:image:alt', image.alt],
-    ['name', 'twitter:card', 'summary'],
-  ];
 
-  return tags
-    .map(([attribute, key, value]) => `<meta ${attribute}="${key}" content="${escapeAttribute(value)}" />`)
-    .join('\n    ')
-    .concat('\n  ');
+  return previewTagsMarkup({
+    title: author ? `Status by ${name} (@${author.username})` : 'Status',
+    description: plainTitle(cleanXmlText(content), DESCRIPTION_LIMIT),
+    url: statusUrl(id),
+    imagePath: avatarPath(author?.avatar),
+    imageAlt: `${name}'s avatar: ${avatarLabel(author?.avatar).toLowerCase()}`,
+  });
 }
 
 // Returns the response unchanged, or a copy with the preview tags added to the head.
@@ -96,6 +80,11 @@ export async function statusPage(
 
   const markup = previewMarkup(status);
   const rewritten = new Rewriter()
+    .on(PREVIEW_TAGS_SELECTOR, {
+      element(element) {
+        element.remove(); // the shell's default set; this page has its own
+      },
+    })
     .on('head', {
       element(element) {
         element.append(markup, { html: true });

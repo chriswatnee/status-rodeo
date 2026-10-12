@@ -1,26 +1,21 @@
-// Feed autodiscovery for a profile page. A feed reader given /users/<name> does not run the
-// app's JavaScript, so it only sees the <link rel="alternate"> in the static index.html (the
-// sitewide feed). The Cloudflare function in functions/users/[username]/index.js takes the
-// app shell for that address and, when the user exists, adds that user's feed link in front of
-// the sitewide one. Everything here fails soft: on any problem the page is sent unchanged,
+// Feed autodiscovery and link previews for a profile page. A feed reader or a chat app given
+// /users/<name> does not run the app's JavaScript, so it only sees the static index.html (the
+// sitewide feed link and the default preview tags). The Cloudflare function in
+// functions/users/[username]/index.js takes the app shell for that address and, when the user
+// exists, adds that user's feed link in front of the sitewide one and swaps the default preview
+// tags for the user's own (name and avatar icon). Everything here fails soft: on any problem the page is sent unchanged,
 // because a profile page must never break or wait on this. The HTMLRewriter class is passed
 // in so this can be unit tested without Cloudflare (tests/user-page.test.js).
+import { avatarLabel, avatarPath } from './avatar-icons.js';
 import { USERNAME } from './feed.js';
+import { PREVIEW_TAGS_SELECTOR, escapeAttribute, previewTagsMarkup } from './preview-tags.js';
+import { userUrl } from './rss.js';
 
 // A slow database must not hold up the page: after this the page is sent without the link.
 export const LOOKUP_TIMEOUT_MS = 1500;
 
-// Text for a double-quoted HTML attribute: control characters removed, whitespace collapsed.
-export function escapeAttribute(text) {
-  return String(text)
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+// Kept here for the existing imports and tests; it lives in src/preview-tags.js.
+export { escapeAttribute };
 
 // The link tag for one user. The href is relative, like the sitewide one in index.html.
 export function feedLinkMarkup({ username, display_name: displayName }) {
@@ -28,6 +23,17 @@ export function feedLinkMarkup({ username, display_name: displayName }) {
   const href = escapeAttribute(`/users/${encodeURIComponent(username)}/feed.xml`);
 
   return `<link rel="alternate" type="application/rss+xml" title="${title}" href="${href}" />\n    `;
+}
+
+// The link-preview tags for one profile: who it is and their avatar icon.
+export function profilePreviewMarkup({ username, display_name: displayName, avatar }) {
+  return previewTagsMarkup({
+    title: `${displayName} (@${username})`,
+    description: `Statuses from ${displayName} (@${username}) on Status Rodeo.`,
+    url: userUrl(username),
+    imagePath: avatarPath(avatar),
+    imageAlt: `${displayName}'s avatar: ${avatarLabel(avatar).toLowerCase()}`,
+  });
 }
 
 function withTimeout(promise, ms) {
@@ -42,7 +48,7 @@ function withTimeout(promise, ms) {
 async function findProfile(supabase, username) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('username, display_name')
+    .select('username, display_name, avatar')
     .eq('username', username)
     .maybeSingle();
 
@@ -76,10 +82,21 @@ export async function userPage(
   if (!profile) return response;
 
   const markup = feedLinkMarkup(profile);
+  const previewMarkup = profilePreviewMarkup(profile);
   const rewritten = new Rewriter()
     .on('link[rel="alternate"][type="application/rss+xml"]', {
       element(element) {
         element.before(markup, { html: true });
+      },
+    })
+    .on(PREVIEW_TAGS_SELECTOR, {
+      element(element) {
+        element.remove(); // the shell's default set; this page has its own
+      },
+    })
+    .on('head', {
+      element(element) {
+        element.append(previewMarkup, { html: true });
       },
     })
     .transform(response);
