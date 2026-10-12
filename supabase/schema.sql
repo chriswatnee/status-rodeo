@@ -4,6 +4,10 @@
 -- verified with hat-tips-verify.sql (27 of 27 checks) on 2026-10-10, plus the avatar icons
 -- (profiles.avatar, its check, the update policy and column grant), applied in production and
 -- verified with avatar-icons-verify.sql (20 of 20 checks) on 2026-10-11.
+-- The "Edit and delete" section (statuses.edited_at, its trigger, the update and delete
+-- policies and grants) is PENDING: it is the content of supabase/status-edit-delete.sql, which
+-- has not been applied to production yet. Remove this line when it has been applied and
+-- verified with status-edit-delete-verify.sql.
 -- Covers tables, foreign keys, check constraints, RLS, and policies.
 -- Table grants are not included: anon and authenticated hold the Supabase default
 -- grants on profiles and statuses, except UPDATE on profiles (see the avatar section below).
@@ -23,7 +27,8 @@ create table public.statuses (
   user_id uuid not null,
   content text not null,
   visibility text not null default 'public'::text,
-  created_at timestamp with time zone default now()
+  created_at timestamp with time zone default now(),
+  edited_at timestamp with time zone   -- PENDING, see the Edit and delete section
 );
 
 alter table public.profiles
@@ -82,6 +87,43 @@ create policy "Public statuses are viewable"
 create policy "Users can create their own statuses"
   on public.statuses for insert to authenticated
   with check (((select auth.uid() as uid) = user_id));
+
+-- Edit and delete (PENDING, same as supabase/status-edit-delete.sql). A signed-in user can
+-- update only their own statuses and only the content column, and delete only their own.
+-- edited_at is set by the trigger when content really changes, never by the browser.
+create or replace function public.statuses_set_edited_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.content is distinct from old.content then
+    new.edited_at := now();
+  else
+    new.edited_at := old.edited_at;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists statuses_set_edited_at on public.statuses;
+create trigger statuses_set_edited_at
+  before update on public.statuses
+  for each row execute function public.statuses_set_edited_at();
+
+revoke update, delete on public.statuses from anon, authenticated;
+grant delete on public.statuses to authenticated;
+grant update (content) on public.statuses to authenticated;
+
+create policy "Users can update their own statuses"
+  on public.statuses for update to authenticated
+  using (((select auth.uid() as uid) = user_id))
+  with check (((select auth.uid() as uid) = user_id));
+
+create policy "Users can delete their own statuses"
+  on public.statuses for delete to authenticated
+  using (((select auth.uid() as uid) = user_id));
 
 -- ---------------------------------------------------------------------------
 -- Hat Tips. Same objects as supabase/hat-tips.sql (the migration that was applied),

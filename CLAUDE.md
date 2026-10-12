@@ -263,6 +263,19 @@ everything it does. Code that selects `avatar` needs the column to exist: a sele
 missing column fails, which would break every feed. The three older sections here were last
 checked against the live database on 2026-10-06, and the check constraint on 2026-10-08.
 
+Edit and delete (PENDING, not applied to production yet): `supabase/status-edit-delete.sql` adds
+`statuses.edited_at timestamptz` (null until the content is first changed; a trigger sets it, only when
+`content` really changes), a policy "Users can update their own statuses" plus `UPDATE (content)` for
+`authenticated` only (so `id`, `user_id`, `visibility`, `created_at` and `edited_at` stay read-only from
+the Data API), and "Users can delete their own statuses" plus `DELETE` for `authenticated` (hat tips go
+with a deleted status through `ON DELETE CASCADE`). `anon` loses UPDATE and DELETE. Run
+`supabase/status-edit-delete-verify.sql` after applying it (24 checks, all must say `ok = true`; it
+rolls back everything it does). It was tested against a throwaway local Postgres 16 with Supabase-like
+default grants (24 of 24, and it fails on three deliberately broken setups), not against Supabase.
+Until it is applied, no code may select `edited_at` (a select naming a missing column fails every feed)
+and the policy lists below are still the live ones. After it is applied, update this paragraph, the
+lines about policies below ("no update or delete policies on `statuses`") and `supabase/schema.sql`.
+
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
 - "Public statuses are viewable": `statuses` select, role `public`, using
