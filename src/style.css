@@ -474,7 +474,8 @@ textarea:focus-visible {
 /* Icons beside button labels take the button's text colour; the error icon
    takes the warning colour and sits in front of its message. */
 .login button,
-.composer button {
+.composer button,
+.edit-save {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -599,7 +600,8 @@ textarea:focus-visible {
 /* Buttons */
 
 .login button,
-.composer button {
+.composer button,
+.edit-save {
   /* The 2px border is taken out of the padding, so the size is unchanged. */
   padding: calc(0.5rem - 2px) calc(1.2rem - 2px);
   border: 2px solid var(--button-edge);
@@ -617,29 +619,34 @@ textarea:focus-visible {
 
 @media (hover: hover) {
   .login button:hover,
-  .composer button:hover {
+  .composer button:hover,
+  .edit-save:hover {
     background: linear-gradient(var(--button-hover-top), var(--button-hover-bottom));
   }
 }
 
 .login button[aria-busy='true'],
-.composer button[aria-busy='true'] {
+.composer button[aria-busy='true'],
+.edit-save[aria-busy='true'] {
   padding-inline: 0.5rem;
   cursor: progress;
 }
 
 .login button,
-.composer button {
+.composer button,
+.edit-save {
   transition: transform 0.12s ease-out;
 }
 
 .login button:active:not(:disabled),
-.composer button:active:not(:disabled) {
+.composer button:active:not(:disabled),
+.edit-save:active:not(:disabled) {
   transform: scale(0.96);
 }
 
 .login button:active,
-.composer button:active {
+.composer button:active,
+.edit-save:active {
   background: linear-gradient(var(--button-active-top), var(--button-active-bottom));
   box-shadow:
     inset 0 2px 3px rgba(40, 15, 5, 0.45),
@@ -915,9 +922,40 @@ textarea:focus-visible {
   color: var(--text);
 }
 
+.edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.edit-save,
+.edit-cancel {
+  min-height: 2.75rem;
+}
+
+/* Cancel: the same outlined look as the Edit profile button, so Save is the main action. */
+.edit-cancel {
+  padding: calc(0.5rem - 2px) calc(1.2rem - 2px);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--link);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edit-save:disabled,
+.edit-cancel:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .edit-back {
   margin: 1.2rem 0 0;
 }
+
 
 /* Wide enough, the twelve make two rows of six; narrower, as many as fit. */
 @media (min-width: 640px) {
@@ -934,6 +972,10 @@ textarea:focus-visible {
 
   .avatar-choice:hover {
     border-color: var(--link);
+  }
+
+  .edit-cancel:hover:not(:disabled) {
+    background: var(--nav-active);
   }
 }
 
@@ -1037,13 +1079,15 @@ textarea:focus-visible {
    This invisible layer keeps the full area tappable while the button is pressed. */
 .feed-more button,
 .login button,
-.composer button {
+.composer button,
+.edit-save {
   position: relative;
 }
 
 .feed-more button::after,
 .login button::after,
-.composer button::after {
+.composer button::after,
+.edit-save::after {
   content: '';
   position: absolute;
   inset: -3%;
@@ -1110,13 +1154,15 @@ textarea:focus-visible {
 
   .feed-more button,
   .login button,
-  .composer button {
+  .composer button,
+  .edit-save {
     transition: none;
   }
 
   .feed-more button:active:not(:disabled),
   .login button:active:not(:disabled),
-  .composer button:active:not(:disabled) {
+  .composer button:active:not(:disabled),
+  .edit-save:active:not(:disabled) {
     transform: none;
   }
 }

@@ -99,7 +99,8 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   `avatar` column of their own row and checks that one row changed (a refused update is not an
   error to PostgREST). Results are ok, `unknown` (not an icon, nothing sent), `session-expired`
   or `failed`; never throws. Unit tested. The picker is `showAvatarEditor()` on the Edit profile
-  page (`renderEditProfile()` in `src/main.js`); see "Edit profile page" under Design direction.
+  page (`renderEditProfile()` in `src/main.js`), a form with Save and Cancel; see "Edit profile
+  page" under Design direction.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
@@ -507,16 +508,27 @@ right edge, level with the avatar; below that it wraps onto its own full-width l
 beside it cut it off at every phone width; `.profile > div` is `flex: 1 1 0` so the identity never
 wraps itself). Same pattern as other social apps (Twitter/X, Instagram, GitHub). The page is a `.feed-panel` headed "Edit profile": your avatar, name
 and @username, then "Avatar" with the 12 icons as buttons (`.avatar-choice`, `aria-label` and tooltip
-the icon's name, `aria-pressed` on the one in use, which also gets a ring and a check so it is not
+the icon's name, `aria-pressed` on the chosen one, which also gets a ring and a check so it is not
 shown by colour alone; four columns on phones, up to six per row on wide screens, at least 44px
-each), then "Back to my profile". The avatar is the only thing to edit: the database only lets you
-update that column (see Data and security). Tapping an icon saves at once with `setAvatar()`: the
-avatar changes everywhere on the page right away (sidebar, composer, the avatar on this page, your
-profile card and your rows, through `showAvatarEverywhere()`), the page stays where it is, and a live
-note says "Avatar changed to cactus." If the save fails everything goes back with "Couldn't save your
-avatar. Try again."; if the login is gone you are signed out locally and the sign-in form says "Your
-session expired. Sign in again to change your avatar." One save at a time; tapping the icon already in
-use does nothing. A signed-out visitor sees "Sign in to edit your profile." and the editor appears
+each), then a note, the Save and Cancel buttons and "Back to my profile". The page is a real
+`<form class="edit-form" novalidate>`. The avatar is the only thing to edit: the database only lets you
+update that column (see Data and security). Picking an icon only previews it on this page (the avatar
+beside your name and the pressed icon change; the sidebar, composer, profile card and feed rows keep the
+saved one) and the note says "Not saved yet." Save (`.edit-save`, styled like Post and sharing its
+press, busy and 44px-area rules) is disabled until the choice differs from the saved icon; Cancel
+(`.edit-cancel`, outlined like the Edit profile button) puts the saved icon back and clears the note;
+picking the saved icon again also counts as no change. Save sends one `setAvatar()`: while it runs the
+button reads "Saving…" (same width, `aria-busy`), Cancel and the icons are inert, and nothing else can
+start (one save at a time). On success the avatar changes everywhere on the page right away (sidebar,
+composer, the avatar on this page, your profile card and your rows, through `showAvatarEverywhere()`),
+the page stays where it is, the live note says "Avatar saved as cactus." and focus moves to the chosen
+icon (the disabled Save button can't keep it). If the save fails nothing outside this page ever changed;
+the choice stays selected with "Couldn't save your avatar. Try again." so Save can be tried again, and
+Cancel drops it; if the login is gone you are signed out locally and the sign-in form says "Your
+session expired. Sign in again to change your avatar." Leaving the page with an unsaved choice drops it
+without asking (it is only an icon). More fields are planned: each needs its own column grant, a CHECK
+constraint and verify checks in SQL first (the `username` is deliberately not meant to become
+editable: `/users/<username>` addresses and the owner's personal-site API depend on it). A signed-out visitor sees "Sign in to edit your profile." and the editor appears
 when they sign in (`setPageHooks`; a refreshed session does not rebuild it under someone who is
 choosing); if the profile can't be loaded it says "Couldn't load your profile." The tab title is
 "Edit profile · Status Rodeo". The 12 files are not lazy-loaded here: it is a page you open on
