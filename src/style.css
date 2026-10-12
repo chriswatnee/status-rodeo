@@ -212,11 +212,38 @@ textarea:focus-visible {
   width: min(81rem, calc(100% - 2 * max(0.7rem, 14px)));
   margin: var(--gap) auto 0;
   aspect-ratio: var(--masthead-ratio);
-  /* Reserves the space, and is dark wood so the cream title reads while the picture loads. */
-  background: var(--wood-dark);
+  /* Reserves the space. While the picture loads it is the page colour (nothing dark
+     flashes), with no shadow and the title hidden; the picture and title then fade in
+     together (`data-loaded`, set by `watchMasthead()`). */
+  background: var(--bg);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+.masthead[data-loaded] {
+  box-shadow: var(--shadow);
+}
+
+.masthead:not([data-loaded]) .masthead-image,
+.masthead:not([data-loaded]) .masthead-title {
+  opacity: 0;
+}
+
+.masthead-image,
+.masthead-title {
+  transition: opacity 0.25s ease-out;
+}
+
+/* The picture never arrived: dark wood behind the cream title, as before. */
+.masthead[data-loaded='failed'] {
+  background: var(--wood-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead-image,
+  .masthead-title {
+    transition: none;
+  }
 }
 
 .masthead picture,
