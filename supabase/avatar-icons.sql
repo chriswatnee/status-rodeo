@@ -46,8 +46,3 @@ create policy "Users can update their own profile"
   on public.profiles for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-
--- Optional: give the two existing accounts an icon of their choice instead of the
--- default (run by hand; change the names to taste).
--- update public.profiles set avatar = 'cowboy-boot' where username = 'chris';
--- update public.profiles set avatar = 'cactus' where username = 'sofie';
