@@ -15,7 +15,7 @@ with two users.
 ## Commands
 
 - `npm run dev` : Vite dev server at http://localhost:5173. It does not run the
-  `functions/` endpoints; `/api/status` returns the HTML app shell instead of JSON.
+  `functions/` endpoints; `/api/users/<username>/status` returns the HTML app shell instead of JSON.
 - `npm run build` : production build into `dist/`
 - `npm run preview` : preview the build
 - To test the API locally: `npm run build`, then `npx wrangler pages dev dist`.
@@ -165,11 +165,10 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 
 ## API
 
-- `/api/status` returns the latest public status from any user.
 - `/api/users/<username>/status` returns the latest public status for one user.
-- Anything that shows a particular person's current status, such as the owner's
-  personal site, must use the per-user endpoint. `/api/status` will show whoever
-  posted most recently.
+- This is the only JSON endpoint. The sitewide `/api/status` (latest status from
+  anyone) was removed on 2026-10-12 because nothing used it; the owner's personal
+  site uses the per-user endpoint.
 
 ### RSS feeds
 
@@ -208,7 +207,7 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   `/users/<name>` and `/users/<name>/`, `HTMLRewriter`) cannot be run in the unit tests, so
   check it on a preview after changing it: `curl -s https://<preview>/users/chris | grep alternate`
   should show the user's link first, then the sitewide one, and `/users/nobody` only the sitewide one.
-- `npm run dev` does not run the feeds (like `/api/status`, `/feed.xml` returns the app
+- `npm run dev` does not run the feeds (like `/api/users/<username>/status`, `/feed.xml` returns the app
   shell); test them with `wrangler pages dev` or a Cloudflare preview. Verified in
   Cloudflare's documentation: `[username]` matches one path segment, Functions run before
   static files and the SPA fallback, a trailing slash reaches the same Function, and
