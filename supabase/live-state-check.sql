@@ -35,7 +35,7 @@ checks (ord, ok, check_name, detail) as (
                  case is_nullable when 'NO' then ' not null' else '' end ||
                  case is_identity when 'YES' then ' identity(' || identity_generation || ')' else '' end ||
                  coalesce(' default ' || column_default, ''), '; ' order by column_name) as actual,
-               'content text not null; created_at timestamp with time zone default now(); edited_at timestamp with time zone; id bigint not null identity(BY DEFAULT); user_id uuid not null; visibility text not null default ''public''::text' as expected
+               'content text not null; created_at timestamp with time zone not null default now(); edited_at timestamp with time zone; id bigint not null identity(BY DEFAULT); user_id uuid not null; visibility text not null default ''public''::text' as expected
         from information_schema.columns where table_schema = 'public' and table_name = 'statuses') s
 
   union all
@@ -43,7 +43,7 @@ checks (ord, ok, check_name, detail) as (
   from (select string_agg(column_name || ' ' || data_type ||
                  case is_nullable when 'NO' then ' not null' else '' end ||
                  coalesce(' default ' || column_default, ''), '; ' order by column_name) as actual,
-               'avatar text not null default ''cowboy-hat''::text; created_at timestamp with time zone default now(); display_name text not null; user_id uuid not null; username text not null' as expected
+               'avatar text not null default ''cowboy-hat''::text; created_at timestamp with time zone not null default now(); display_name text not null; user_id uuid not null; username text not null' as expected
         from information_schema.columns where table_schema = 'public' and table_name = 'profiles') s
 
   union all
@@ -146,7 +146,7 @@ checks (ord, ok, check_name, detail) as (
   -- ---------- functions ----------
   union all
   select 60, actual = E'hat_tip_info(status_ids bigint[]) | secdef=true | search_path="" | stable | owner=postgres | execute: anon,authenticated\nstatuses_set_edited_at() | secdef=false | search_path="" | volatile | owner=postgres',
-         'the two functions in public: SECURITY DEFINER or not, empty search_path, owner, and (hat_tip_info) who may run it', actual
+         'the two app functions in public (the Supabase-made rls_auto_enable() is ignored): SECURITY DEFINER or not, empty search_path, owner, and (hat_tip_info) who may run it', actual
   from (select string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ') | secdef=' || p.prosecdef
                    || ' | search_path=' || coalesce((select substr(c, 13) from unnest(p.proconfig) c where c like 'search_path=%'), 'unset')
                    || ' | ' || case p.provolatile when 'i' then 'immutable' when 's' then 'stable' else 'volatile' end
@@ -156,7 +156,7 @@ checks (ord, ok, check_name, detail) as (
                                 || case when has_function_privilege('public'::name, p.oid, 'EXECUTE') then ' (and PUBLIC)' else '' end
                       end,
                    E'\n' order by p.proname) as actual
-        from pg_proc p where p.pronamespace = 'public'::regnamespace) f
+        from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname <> 'rls_auto_enable') f
 
   -- ---------- storage and data ----------
   union all

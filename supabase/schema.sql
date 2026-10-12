@@ -16,7 +16,7 @@
 
 create table public.profiles (
   user_id uuid not null primary key,
-  created_at timestamp with time zone default now(),
+  created_at timestamp with time zone not null default now(),
   username text not null unique,
   display_name text not null,
   avatar text not null default 'cowboy-hat'::text
@@ -27,7 +27,7 @@ create table public.statuses (
   user_id uuid not null,
   content text not null,
   visibility text not null default 'public'::text,
-  created_at timestamp with time zone default now(),
+  created_at timestamp with time zone not null default now(),
   edited_at timestamp with time zone   -- set by a trigger, see Edit and delete
 );
 
