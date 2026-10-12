@@ -490,10 +490,12 @@ unknown username shows "Page not found", and so does any unknown path: a panel
 
 Edit profile page: `/profile/edit` (`renderEditProfile()`, a trailing slash is accepted; `/profile`
 and anything longer are not-found) is where you change your avatar. Everyone's profile page is
-unchanged except that the signed-in owner sees a slim panel-row "Edit profile" (the `edit-profile`
-icon, `#profile-edit`) between the profile card and the feed; it is its own row, not a button in the
-card, because the card's one-line "@name · Joined … · 14 statuses" needs the room (a button there cut
-it off at every phone width). The page is a `.feed-panel` headed "Edit profile": your avatar, name
+unchanged except that the signed-in owner sees an outlined "Edit profile" button (the `edit-profile`
+icon, `a.profile-edit#profile-edit`) inside the profile card. From 900px it is a pill at the card's
+right edge, level with the avatar; below that it wraps onto its own full-width line under the identity
+(44px tall), because the card's one-line "@name · Joined … · 14 statuses" needs the room (a button
+beside it cut it off at every phone width; `.profile > div` is `flex: 1 1 0` so the identity never
+wraps itself). Same pattern as other social apps (Twitter/X, Instagram, GitHub). The page is a `.feed-panel` headed "Edit profile": your avatar, name
 and @username, then "Avatar" with the 12 icons as buttons (`.avatar-choice`, `aria-label` and tooltip
 the icon's name, `aria-pressed` on the one in use, which also gets a ring and a check so it is not
 shown by colour alone; four columns on phones, up to six per row on wide screens, at least 44px

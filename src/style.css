@@ -314,7 +314,6 @@ textarea:focus-visible {
 .sidebar,
 .composer,
 .profile,
-.profile-edit,
 .notice,
 .feed-panel {
   border: 1px solid var(--border);
@@ -744,6 +743,7 @@ textarea:focus-visible {
    as the avatar. On a narrow phone it gets a little smaller, and if it still
    doesn't fit it is cut off with an ellipsis rather than wrapping. */
 .profile > div {
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -753,19 +753,41 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-/* "Edit profile": a slim row of its own under your profile card (shown only to you), so the
-   card keeps its room for "@name · Joined … · 14 statuses". */
+/* "Edit profile": an outlined button inside your profile card (shown only to you). Narrow
+   screens (phones and small tablets) wrap it onto its own full-width line under the
+   identity, so "@name · Joined … · 14 statuses" keeps its room; from 900px it sits at the
+   right of the card, level with the avatar. */
+.profile {
+  flex-wrap: wrap;
+  row-gap: 0.65rem;
+}
+
 .profile-edit {
   display: flex;
+  flex: 1 0 100%;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  margin-bottom: var(--gap);
-  padding: 0.35rem var(--inset);
+  padding: 0.35rem 1.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
   color: var(--link);
   font-weight: 700;
   text-decoration: none;
   touch-action: manipulation;
+}
+
+@media (min-width: 900px) {
+  .profile {
+    flex-wrap: nowrap;
+  }
+
+  .profile-edit {
+    flex: 0 0 auto;
+    margin-left: auto;
+    border-radius: 999px;
+  }
 }
 
 .profile-edit .icon {
@@ -890,7 +912,7 @@ textarea:focus-visible {
 
 @media (hover: hover) {
   .profile-edit:hover {
-    text-decoration: underline;
+    background: var(--nav-active);
   }
 
   .avatar-choice:hover {

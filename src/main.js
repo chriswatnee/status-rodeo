@@ -529,9 +529,8 @@ async function renderUserPage(username, isCurrent) {
                 <span id="profile-meta" class="profile-meta" hidden></span>
               </p>
             </div>
+            <a class="profile-edit" id="profile-edit" href="/profile/edit" hidden>${iconMarkup('edit-profile')}Edit profile</a>
           </section>
-
-          <a class="profile-edit" id="profile-edit" href="/profile/edit" hidden>${iconMarkup('edit-profile')}Edit profile</a>
 
           <section class="feed-panel">
             <div class="panel-heading">
