@@ -291,6 +291,7 @@ function renderHome() {
                 id="status-input"
                 rows="1"
                 aria-describedby="char-help"
+                aria-keyshortcuts="Control+Enter Meta+Enter"
               ></textarea>
               <span id="char-help" class="visually-hidden">${STATUS_LIMIT} characters maximum.</span>
               <div class="composer-actions">
@@ -514,6 +515,18 @@ function renderHome() {
   }
 
   postButton.addEventListener('click', postStatus);
+
+  // Ctrl+Enter (Cmd+Enter on a Mac) posts, the same as the Post button. Plain Enter still
+  // adds a new line. Not while an input method is composing text (the key may only confirm
+  // the composition), and not for a held-down key, so it can't post twice.
+  statusInput.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || event.isComposing || event.repeat) {
+      return;
+    }
+
+    event.preventDefault();
+    postStatus();
+  });
 
   pager.load();
 }

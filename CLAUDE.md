@@ -556,7 +556,9 @@ Safari 26.2, Firefox 152) keep the shorter box, which scrolls and can still be d
 16px or more on phones, because iOS zooms the page when a smaller field is focused. Every line is capped at 28 characters so it fits on one line on a 320px
 phone (checked in the browser at 320, 360 and 390px); keep new lines Western, mainstream (well-known cowboy phrases), short and with the curly apostrophe. Under 640px the composer's avatar is hidden (it is
 already in the sidebar bar just above) and the box takes the full width. It turns rust and bold with 20 or fewer characters left, and a
-visually hidden live region announces the remaining count there. Typing and
+visually hidden live region announces the remaining count there. Ctrl+Enter (Cmd+Enter on a Mac)
+in the text box posts, the same as the Post button (plain Enter is a new line; it is ignored while an input
+method is composing and for a held-down key; the box has `aria-keyshortcuts`; no visible hint). Typing and
 pasting stop at 280 Unicode code points (nothing already typed is removed), empty
 or over-limit statuses are not sent, and a failed post keeps the text and shows a
 short message under the buttons. While a post is in flight (until the feed has
