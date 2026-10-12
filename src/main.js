@@ -1526,21 +1526,34 @@ function createStatusRow({ id, username, displayName, avatar, content, createdAt
   name.href = `/users/${username}`;
   name.textContent = displayName;
 
+  // "@chris" beside the display name. Plain muted text: the name next to it is the link to the
+  // profile, so a second link to the same place isn't needed.
+  const handle = document.createElement('span');
+  handle.className = 'status-handle';
+  handle.textContent = `@${username}`;
+
   const meta = document.createElement('div');
   meta.className = 'status-meta';
   const time = createTimeElement(createdAt);
 
   // The time is the link to this status's own page, like the timestamp on other
   // social sites. It stays a plain, muted time (see .status-time).
+  // "@chris · 3 days ago" is one unit: beside the name when the row is wide enough, otherwise
+  // the whole unit moves to a second line, so the dot never starts a line.
+  const sub = document.createElement('div');
+  sub.className = 'status-sub';
+
   if (id !== undefined) {
     const permalink = document.createElement('a');
     permalink.className = 'status-time';
     permalink.href = `/statuses/${id}`;
     permalink.append(time);
-    meta.append(name, permalink);
+    sub.append(handle, permalink);
   } else {
-    meta.append(name, time);
+    sub.append(handle, time);
   }
+
+  meta.append(name, sub);
 
   const paragraph = document.createElement('p');
   fillStatusText(paragraph, content);
