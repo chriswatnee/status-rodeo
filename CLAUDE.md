@@ -658,8 +658,14 @@ Target:
   spacing. Western display type only for the title and a few headings; normal
   readable type for statuses and controls. Self-host any font.
 - Sidebar: account identity and navigation. Main column: composer and feed. Feed
-  rows are simple (avatar, name, time, text), with no decoration on individual
-  statuses. The time is a link to the status's own page but looks exactly like the plain
+  rows are simple (avatar, name, @username, time, text), with no decoration on individual
+  statuses. The row header is `Name @username · 3 days ago` (built in `createStatusRow()`): the
+  name links to the profile; the `@username` (`.status-handle`) is plain muted text, not a second
+  link; "@username · time" is one unit (`.status-sub`) that sits beside the name when there is room
+  and otherwise drops to a second line as a whole, so the dot never starts a line (on phones at
+  360px and under these are 0.88rem so more rows fit on one line). A name or @username too long for
+  the row is cut with an ellipsis (the full name is on the profile page); the time never wraps. The
+  time is a link to the status's own page but looks exactly like the plain
   muted time (same colour, size and position; the "· " dot is drawn on the link so only
   the time is underlined, and only on hover, inside the hover media query).
 - Avatars are the illustrated icon set (`/avatars/icons/<name>.webp`), picked by the user and
