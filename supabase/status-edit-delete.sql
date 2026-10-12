@@ -1,8 +1,10 @@
 -- Edit and delete your own statuses.
 --
--- This is a MIGRATION for the Supabase SQL editor. It is not applied automatically. After it
--- has been applied, run status-edit-delete-verify.sql (every row must say ok = true) and
--- update the "applied" line here and in CLAUDE.md.
+-- This is a MIGRATION for the Supabase SQL editor. It is not applied automatically. It was
+-- applied in production by hand (by Muse) on 2026-10-12 and checked with
+-- status-edit-delete-verify.sql (23 of 24 rows ok = true as reported to Chris; the one false row
+-- was the old check on the constraint's NAME, which the verify script no longer relies on;
+-- the results were not pasted into the session). schema.sql carries the same objects.
 --
 -- Apply it BEFORE deploying code that reads statuses.edited_at: a select that names a column
 -- that does not exist fails, which would break every feed. Applying it first is harmless to
@@ -17,7 +19,7 @@
 --   * A signed-in user can UPDATE only their own statuses and ONLY the content column. The row
 --     is limited by the policy; the column is limited by a column-level privilege, which keeps
 --     id, user_id, visibility, created_at and edited_at read-only from the Data API. The
---     statuses_content_check constraint (1 to 280 characters, not blank) still applies.
+--     statuses_content_length_check constraint (1 to 280 characters, not blank) still applies.
 --   * A signed-in user can DELETE only their own statuses. Hat tips on a deleted status go with
 --     it (hat_tips.status_id is ON DELETE CASCADE).
 --   * Signed-out visitors can neither update nor delete.

@@ -1,13 +1,13 @@
 -- Status Rodeo schema export, generated 2026-10-06 from the live database, plus the
--- statuses_content_check constraint, verified against production on 2026-10-08, plus
+-- statuses content length constraint, verified against production on 2026-10-08, plus
 -- the Hat Tips objects (hat_tips table, hat_tip_info function), applied in production and
 -- verified with hat-tips-verify.sql (27 of 27 checks) on 2026-10-10, plus the avatar icons
 -- (profiles.avatar, its check, the update policy and column grant), applied in production and
 -- verified with avatar-icons-verify.sql (20 of 20 checks) on 2026-10-11.
--- The "Edit and delete" section (statuses.edited_at, its trigger, the update and delete
--- policies and grants) is PENDING: it is the content of supabase/status-edit-delete.sql, which
--- has not been applied to production yet. Remove this line when it has been applied and
--- verified with status-edit-delete-verify.sql.
+-- plus the Edit and delete objects (statuses.edited_at, its trigger, the update and delete
+-- policies and grants), applied in production on 2026-10-12 and checked with
+-- status-edit-delete-verify.sql (23 of 24 as reported; the 24th was a wrong constraint name
+-- in the check, now fixed).
 -- Covers tables, foreign keys, check constraints, RLS, and policies.
 -- Table grants are not included: anon and authenticated hold the Supabase default
 -- grants on profiles and statuses, except UPDATE on profiles (see the avatar section below).
@@ -28,7 +28,7 @@ create table public.statuses (
   content text not null,
   visibility text not null default 'public'::text,
   created_at timestamp with time zone default now(),
-  edited_at timestamp with time zone   -- PENDING, see the Edit and delete section
+  edited_at timestamp with time zone   -- set by a trigger, see Edit and delete
 );
 
 alter table public.profiles
@@ -47,8 +47,10 @@ alter table public.statuses
 -- uses) and cannot be blank. Checked against the production constraint on
 -- 2026-10-08. Postgres stores it as
 -- CHECK (char_length(content) >= 1 AND char_length(content) <= 280 AND content !~ '^\s*$').
+-- In production the constraint is named statuses_content_length_check (confirmed by Muse on
+-- 2026-10-12; this file used to say statuses_content_check).
 alter table public.statuses
-  add constraint statuses_content_check
+  add constraint statuses_content_length_check
   check (
     char_length(content) between 1 and 280
     and content !~ '^\s*$'
@@ -88,7 +90,7 @@ create policy "Users can create their own statuses"
   on public.statuses for insert to authenticated
   with check (((select auth.uid() as uid) = user_id));
 
--- Edit and delete (PENDING, same as supabase/status-edit-delete.sql). A signed-in user can
+-- Edit and delete (same as supabase/status-edit-delete.sql, applied 2026-10-12). A signed-in user can
 -- update only their own statuses and only the content column, and delete only their own.
 -- edited_at is set by the trigger when content really changes, never by the browser.
 create or replace function public.statuses_set_edited_at()

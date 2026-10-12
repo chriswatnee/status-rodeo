@@ -219,7 +219,8 @@ Other facts:
 - Posting writes directly from the browser to Supabase (the Cloudflare Functions
   are read-only). A status is 1 to 280 characters and cannot be blank. This is
   enforced twice: in the browser (`src/status-limit.js`) and by the database CHECK
-  constraint `statuses_content_check` on `statuses.content`
+  constraint on `statuses.content` (named `statuses_content_length_check` in production; this file
+  and `schema.sql` used to say `statuses_content_check`, which was wrong, found 2026-10-12)
   (`char_length(content) between 1 and 280 and content !~ '^\s*$'`), which is
   validated and was checked against production on 2026-10-08. Both count Unicode code
   points (Postgres `char_length`), so an emoji is 1 character and a flag is 2. A
@@ -227,7 +228,7 @@ Other facts:
   "Couldn't post" message and keeps the text. If you change the limit, change it in
   both places.
 - The app only uses `visibility = 'public'`. There is no CHECK constraint on
-  `visibility`. `statuses_content_check` is the only CHECK constraint.
+  `visibility`. The content length constraint is the only CHECK constraint on `statuses`.
 - No trigger creates a profile when an Auth user is created. Profiles are
   provisioned by hand, so creating an Auth user alone does not give a working
   account.
@@ -263,18 +264,17 @@ everything it does. Code that selects `avatar` needs the column to exist: a sele
 missing column fails, which would break every feed. The three older sections here were last
 checked against the live database on 2026-10-06, and the check constraint on 2026-10-08.
 
-Edit and delete (PENDING, not applied to production yet): `supabase/status-edit-delete.sql` adds
-`statuses.edited_at timestamptz` (null until the content is first changed; a trigger sets it, only when
-`content` really changes), a policy "Users can update their own statuses" plus `UPDATE (content)` for
-`authenticated` only (so `id`, `user_id`, `visibility`, `created_at` and `edited_at` stay read-only from
-the Data API), and "Users can delete their own statuses" plus `DELETE` for `authenticated` (hat tips go
-with a deleted status through `ON DELETE CASCADE`). `anon` loses UPDATE and DELETE. Run
-`supabase/status-edit-delete-verify.sql` after applying it (24 checks, all must say `ok = true`; it
-rolls back everything it does). It was tested against a throwaway local Postgres 16 with Supabase-like
-default grants (24 of 24, and it fails on three deliberately broken setups), not against Supabase.
-Until it is applied, no code may select `edited_at` (a select naming a missing column fails every feed)
-and the policy lists below are still the live ones. After it is applied, update this paragraph, the
-lines about policies below ("no update or delete policies on `statuses`") and `supabase/schema.sql`.
+Edit and delete (live in production): `supabase/status-edit-delete.sql` adds `statuses.edited_at
+timestamptz` (null until the content is first changed; a trigger sets it, only when `content` really
+changes), the policy "Users can update their own statuses" plus `UPDATE (content)` for `authenticated`
+only (so `id`, `user_id`, `visibility`, `created_at` and `edited_at` stay read-only from the Data API),
+and "Users can delete their own statuses" plus `DELETE` for `authenticated` (hat tips go with a deleted
+status through `ON DELETE CASCADE`). `anon` has neither UPDATE nor DELETE. It was applied by hand (by
+Muse) on 2026-10-12 and checked with `supabase/status-edit-delete-verify.sql`: 23 of 24 rows
+`ok = true` as reported to Chris (all behaviour checks passed; the false row was the script's check
+on the constraint's name, now replaced by a check on what the constraint enforces; the results were not
+pasted into the session). Re-run the verify script once to confirm 24 of 24, and after any change to
+these objects; it rolls back everything it does. Code may now select `statuses.edited_at`.
 
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
@@ -285,8 +285,12 @@ Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies
 - "Public profiles are viewable": `profiles` select, role `public`, using `true`
 - "Users can update their own profile": `profiles` update, role `authenticated`, using and with
   check `(select auth.uid()) = user_id` (only the `avatar` column is updatable, see above)
-- These are the only policies on those two tables. There are no update or delete
-  policies on `statuses`, and no insert or delete policies on `profiles`.
+- "Users can update their own statuses": `statuses` update, role `authenticated`, using and with
+  check `(select auth.uid()) = user_id` (only the `content` column is updatable, see above)
+- "Users can delete their own statuses": `statuses` delete, role `authenticated`, using
+  `(select auth.uid()) = user_id`
+- These are the only policies on those two tables. There are no insert or delete
+  policies on `profiles`.
   (`hat_tips` has its own three policies, described above.)
 
 Writes through the Data API are governed only by these policies. There are no
