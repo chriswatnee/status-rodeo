@@ -391,13 +391,13 @@ textarea:focus-visible {
     boot-pulse 1.4s ease-in-out 0.9s infinite;
 }
 
-#boot img {
+/* One rust dot, drawn in CSS (a vector, sharp at any size). */
+.boot-dot {
   display: block;
-  width: 56px;
-  height: 56px;
-  border: 1px solid var(--avatar-border);
-  border-radius: var(--radius-avatar);
-  background: var(--avatar-bg);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 @keyframes boot-in {
@@ -408,7 +408,8 @@ textarea:focus-visible {
 
 @keyframes boot-pulse {
   50% {
-    opacity: 0.55;
+    opacity: 0.45;
+    scale: 0.7;
   }
 }
 
