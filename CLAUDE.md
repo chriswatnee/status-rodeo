@@ -59,7 +59,7 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 ## Structure
 
 - `src/main.js` holds client-side routing by pathname (`/`, `/users/:username`,
-  `/statuses/:id`, otherwise not-found) and all views. Links to app pages are intercepted and
+  `/statuses/:id`, `/profile/edit`, otherwise not-found) and all views. Links to app pages are intercepted and
   navigate with the History API (`navigate()`, `popstate`), so moving between
   pages never reloads the browser page; other links, new-tab or modified clicks
   and `#` links behave normally. The masthead and sidebar are a shared frame built
@@ -98,8 +98,8 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 - `src/set-avatar.js` saves the signed-in user's choice: `setAvatar()` updates only the
   `avatar` column of their own row and checks that one row changed (a refused update is not an
   error to PostgREST). Results are ok, `unknown` (not an icon, nothing sent), `session-expired`
-  or `failed`; never throws. Unit tested. The picker is `setUpAvatarPicker()` in `src/main.js`;
-  see "Avatar icons" under Design direction.
+  or `failed`; never throws. Unit tested. The picker is `showAvatarEditor()` on the Edit profile
+  page (`renderEditProfile()` in `src/main.js`); see "Edit profile page" under Design direction.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
@@ -311,7 +311,7 @@ redirect URLs are configured.
   (`<span class="icon" aria-hidden="true">`), for use beside text that already
   names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
   used only beside labels of things that already work: the nav items (home,
-  profile), Post (pencil), Sign in, Sign out, Change avatar (edit-profile), the Tip your hat button (hat-tip) and
+  profile), Post (pencil), Sign in, Sign out, Edit profile (edit-profile), the Tip your hat button (hat-tip) and
   failure messages (error, via
   `setErrorNote()` and the `icon-error` class, which uses the warning colour).
   "Try again" is a plain link without an icon. Icons inside buttons take the
@@ -488,20 +488,27 @@ smaller (0.82rem), and if it still doesn't fit it is cut off with an ellipsis. A
 unknown username shows "Page not found", and so does any unknown path: a panel
 (`.notice`) with the display-font heading and a link back home.
 
-Avatar picker: on your own profile only (the page hook hides it for everyone else, signed out
-included), a slim panel "Change avatar" (`<details class="avatar-picker">`, the `edit-profile`
-icon, a chevron) sits between the profile card and the feed. Open, it shows the 12 icons as
-buttons (`.avatar-choice`, `aria-label` and tooltip the icon's name, `aria-pressed` on the one
-in use, which also gets a ring and a check so it is not shown by colour alone; four columns on
-phones, up to six per row on wide screens, at least 44px each; the files load lazily, only when
-the panel is opened). Tapping one saves at once with `setAvatar()`: the avatar changes everywhere
-on the page right away (sidebar, composer, profile card and your rows, through
-`showAvatarEverywhere()`), the panel closes, focus returns to "Change avatar" and screen readers
-hear "Avatar changed to cactus." If the save fails everything goes back and the panel stays open
-with "Couldn't save your avatar. Try again."; if the login is gone you are signed out locally and
-the sign-in form says "Your session expired. Sign in again to change your avatar." One save at a
-time; tapping the icon already in use just closes the panel. Feed rows carry
-`data-username` so their avatars can be swapped.
+Edit profile page: `/profile/edit` (`renderEditProfile()`, a trailing slash is accepted; `/profile`
+and anything longer are not-found) is where you change your avatar. Everyone's profile page is
+unchanged except that the signed-in owner sees a slim panel-row "Edit profile" (the `edit-profile`
+icon, `#profile-edit`) between the profile card and the feed; it is its own row, not a button in the
+card, because the card's one-line "@name · Joined … · 14 statuses" needs the room (a button there cut
+it off at every phone width). The page is a `.feed-panel` headed "Edit profile": your avatar, name
+and @username, then "Avatar" with the 12 icons as buttons (`.avatar-choice`, `aria-label` and tooltip
+the icon's name, `aria-pressed` on the one in use, which also gets a ring and a check so it is not
+shown by colour alone; four columns on phones, up to six per row on wide screens, at least 44px
+each), then "Back to my profile". The avatar is the only thing to edit: the database only lets you
+update that column (see Data and security). Tapping an icon saves at once with `setAvatar()`: the
+avatar changes everywhere on the page right away (sidebar, composer, the avatar on this page, your
+profile card and your rows, through `showAvatarEverywhere()`), the page stays where it is, and a live
+note says "Avatar changed to cactus." If the save fails everything goes back with "Couldn't save your
+avatar. Try again."; if the login is gone you are signed out locally and the sign-in form says "Your
+session expired. Sign in again to change your avatar." One save at a time; tapping the icon already in
+use does nothing. A signed-out visitor sees "Sign in to edit your profile." and the editor appears
+when they sign in (`setPageHooks`; a refreshed session does not rebuild it under someone who is
+choosing); if the profile can't be loaded it says "Couldn't load your profile." The tab title is
+"Edit profile · Status Rodeo". The 12 files are not lazy-loaded here: it is a page you open on
+purpose. Feed rows carry `data-username` so their avatars can be swapped.
 
 Status page: `/statuses/<id>` (`renderStatusPage()`) is the stable address of one
 status, by its numeric id so it survives a username change. It is a `.feed-panel` with

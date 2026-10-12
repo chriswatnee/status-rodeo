@@ -120,6 +120,8 @@ function route(moved = false) {
     renderUserPage(parts[1], isCurrent);
   } else if (parts.length === 2 && parts[0] === 'statuses') {
     renderStatusPage(parts[1], isCurrent);
+  } else if (parts.length === 2 && parts[0] === 'profile' && parts[1] === 'edit') {
+    renderEditProfile();
   } else {
     renderNotFound();
   }
@@ -194,7 +196,8 @@ document.addEventListener('click', (event) => {
   const parts = url.pathname.split('/').filter(Boolean);
   const isAppPage =
     parts.length === 0 ||
-    (parts.length === 2 && (parts[0] === 'users' || parts[0] === 'statuses'));
+    (parts.length === 2 && (parts[0] === 'users' || parts[0] === 'statuses')) ||
+    (parts.length === 2 && parts[0] === 'profile' && parts[1] === 'edit');
 
   if (url.origin !== window.location.origin || !isAppPage) return;
 
@@ -528,14 +531,7 @@ async function renderUserPage(username, isCurrent) {
             </div>
           </section>
 
-          <details class="avatar-picker" id="avatar-picker" hidden>
-            <summary>${iconMarkup('edit-profile')}Change avatar</summary>
-            <div class="avatar-picker-body">
-              <p id="avatar-picker-help">Pick the icon that shows beside your name.</p>
-              <div class="avatar-choices" role="group" aria-labelledby="avatar-picker-help"></div>
-              <p class="avatar-picker-note" role="status"></p>
-            </div>
-          </details>
+          <a class="profile-edit" id="profile-edit" href="/profile/edit" hidden>${iconMarkup('edit-profile')}Edit profile</a>
 
           <section class="feed-panel">
             <div class="panel-heading">
@@ -576,7 +572,15 @@ async function renderUserPage(username, isCurrent) {
   profileName.textContent = profile.display_name;
   profileUsername.textContent = `@${profile.username}`;
   profileAvatar.replaceChildren(createAvatar(profile.avatar));
-  setUpAvatarPicker(profile);
+
+  // "Edit profile" is only for the signed-in owner of this profile.
+  const editLink = document.querySelector('#profile-edit');
+
+  setPageHooks({
+    onSession(session) {
+      editLink.hidden = session?.user.id !== profile.user_id;
+    },
+  });
 
   const joined = `Joined ${new Date(profile.created_at).toLocaleDateString('en-US', {
     month: 'short',
@@ -618,17 +622,6 @@ async function renderUserPage(username, isCurrent) {
   }
 }
 
-// Says something to screen readers without showing it (the same live region that announces
-// a new page).
-function announce(text) {
-  const announcer = document.querySelector('#route-announcer');
-
-  announcer.textContent = '';
-  setTimeout(() => {
-    announcer.textContent = text;
-  }, 50);
-}
-
 // Shows one user's avatar everywhere it is on the page: the sidebar, the composer, the profile
 // card and any status rows by them. Used when you pick a new one, and to put the old one back if
 // saving fails. The shared sidebar profile is kept in step so the composer is right on the home
@@ -636,7 +629,7 @@ function announce(text) {
 function showAvatarEverywhere(username, avatar) {
   if (currentProfile && currentProfile.username === username) currentProfile.avatar = avatar;
 
-  for (const selector of ['#sidebar-avatar', '#composer-avatar', '#profile-avatar']) {
+  for (const selector of ['#sidebar-avatar', '#composer-avatar', '#profile-avatar', '#edit-avatar']) {
     const slot = document.querySelector(selector);
 
     if (slot && slot.childElementCount > 0) slot.replaceChildren(createAvatar(avatar));
@@ -647,63 +640,121 @@ function showAvatarEverywhere(username, avatar) {
   }
 }
 
-// "Change avatar" on your own profile: a panel with the twelve icons as buttons (aria-pressed
-// marks the one in use). Tapping one saves it at once: the avatar changes everywhere right away
-// and goes back, with a message, if the save fails. One save at a time. The panel only exists
-// for the signed-in owner of the profile (the hook hides it otherwise); the database allows
-// the same and nothing more, because only your own avatar column can be updated.
-function setUpAvatarPicker(profile) {
-  const picker = document.querySelector('#avatar-picker');
-  const summary = picker.querySelector('summary');
-  const choices = picker.querySelector('.avatar-choices');
-  const note = picker.querySelector('.avatar-picker-note');
+// The Edit profile page (/profile/edit): your own profile, for the signed-in user (a signed-out
+// visitor is told to sign in, and the page fills in when they do). For now the only thing to
+// edit is the avatar: the twelve icons as buttons (aria-pressed marks the one in use). Tapping
+// one saves it at once: the avatar changes everywhere on the page right away and goes back,
+// with a message, if the save fails. One save at a time. The database allows the same and
+// nothing more: only your own row's avatar column can be updated.
+function renderEditProfile() {
+  mount(`
+          <section class="feed-panel edit-profile">
+            <div class="panel-heading">
+              <h2 class="panel-title">Edit profile</h2>
+            </div>
+            <div class="edit-body"></div>
+          </section>
+  `, { linkHome: true });
+
+  document.title = 'Edit profile · Status Rodeo';
+  pageReady();
+
+  const body = document.querySelector('.edit-body');
+  // 'out' (signed out), 'in' (signed in, profile loading) or 'editing'. Signing in again or a
+  // refreshed session must not rebuild the page under someone who is choosing.
+  let state = '';
+
+  setPageHooks({
+    onSession(session) {
+      const next = session ? 'in' : 'out';
+
+      if (state === next || (state === 'editing' && next === 'in')) return;
+
+      state = next;
+      body.replaceChildren(createFeedMessage(session ? 'Loading your profile…' : 'Sign in to edit your profile.'));
+    },
+    onProfile(profile) {
+      if (state === 'editing') return;
+
+      if (!profile) {
+        body.replaceChildren(createFeedMessage("Couldn't load your profile."));
+        return;
+      }
+
+      state = 'editing';
+      showAvatarEditor(body, { ...profile, user_id: currentSession.user.id });
+    },
+  });
+}
+
+function showAvatarEditor(body, me) {
+  body.innerHTML = `
+            <div class="edit-form">
+              <div class="edit-identity">
+                <span id="edit-avatar"></span>
+                <div>
+                  <strong class="edit-name"></strong>
+                  <span class="edit-username"></span>
+                </div>
+              </div>
+
+              <h3 id="avatar-heading">Avatar</h3>
+              <p id="avatar-help" class="edit-help">Pick the icon that shows beside your name.</p>
+              <div class="avatar-choices" role="group" aria-labelledby="avatar-heading" aria-describedby="avatar-help"></div>
+              <p class="edit-note" role="status"></p>
+
+              <p class="edit-back"><a class="edit-back-link" href="">Back to my profile</a></p>
+            </div>
+  `;
+
+  body.querySelector('.edit-name').textContent = me.display_name;
+  body.querySelector('.edit-username').textContent = `@${me.username}`;
+  body.querySelector('.edit-back-link').href = `/users/${me.username}`;
+  body.querySelector('#edit-avatar').replaceChildren(createAvatar(me.avatar));
+
+  const form = body.querySelector('.edit-form');
+  const choices = form.querySelector('.avatar-choices');
+  const note = form.querySelector('.edit-note');
   let saving = false;
 
   function markChosen() {
     for (const button of choices.children) {
-      button.setAttribute('aria-pressed', String(button.dataset.avatar === avatarName(profile.avatar)));
+      button.setAttribute('aria-pressed', String(button.dataset.avatar === avatarName(me.avatar)));
     }
   }
 
   async function choose(name) {
     const userId = currentSession?.user.id;
 
-    if (saving || !userId || userId !== profile.user_id) return;
+    if (saving || !userId || userId !== me.user_id || name === avatarName(me.avatar)) return;
 
-    if (name === avatarName(profile.avatar)) {
-      picker.open = false;
-      summary.focus();
-      return;
-    }
-
-    const previous = avatarName(profile.avatar);
+    const previous = avatarName(me.avatar);
 
     saving = true;
-    picker.setAttribute('aria-busy', 'true');
+    form.setAttribute('aria-busy', 'true');
     setErrorNote(note, '');
-    profile.avatar = name;
-    showAvatarEverywhere(profile.username, name);
+    me.avatar = name;
+    showAvatarEverywhere(me.username, name);
     markChosen();
 
     const result = await setAvatar(supabase, { userId, avatar: name });
 
     saving = false;
-    picker.removeAttribute('aria-busy');
+    form.removeAttribute('aria-busy');
 
     if (result.ok) {
-      picker.open = false;
-      summary.focus();
-      announce(`Avatar changed to ${avatarLabel(name).toLowerCase()}.`);
+      // The note is a live region, so this is also what a screen reader hears.
+      note.textContent = `Avatar changed to ${avatarLabel(name).toLowerCase()}.`;
       return;
     }
 
     console.error(result.error);
-    profile.avatar = previous;
-    showAvatarEverywhere(profile.username, previous);
+    me.avatar = previous;
+    showAvatarEverywhere(me.username, previous);
     markChosen();
 
     if (result.reason === 'session-expired') {
-      // Signing out hides this panel, so the message goes with the sign-in form.
+      // Signing out replaces this page's content, so the message goes with the sign-in form.
       await expireSession();
 
       const loginError = document.querySelector('#login-error');
@@ -723,10 +774,8 @@ function setUpAvatarPicker(profile) {
     button.title = icon.label;
     button.setAttribute('aria-label', icon.label);
 
-    // Lazy, so the twelve files (about 340 KB) are only fetched when the panel is opened.
     const image = new Image();
     image.alt = '';
-    image.loading = 'lazy';
     image.src = avatarPath(icon.name);
     button.append(image);
 
@@ -735,14 +784,6 @@ function setUpAvatarPicker(profile) {
   }
 
   markChosen();
-
-  setPageHooks({
-    onSession(session) {
-      picker.hidden = session?.user.id !== profile.user_id;
-
-      if (picker.hidden) picker.open = false;
-    },
-  });
 }
 
 // One status on its own page (/statuses/<id>), the stable address for a status. It
