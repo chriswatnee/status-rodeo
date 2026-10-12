@@ -1,32 +1,13 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeAttribute, feedLinkMarkup, userPage } from '../src/user-page.js';
+import { createFakeRewriter } from './fake-rewriter.js';
+import { escapeAttribute, feedLinkMarkup, profilePreviewMarkup, userPage } from '../src/user-page.js';
 
 mock.method(console, 'warn', () => {});
 
-const SHELL = '<head>\n    <title>Status Rodeo</title>\n    <link rel="alternate" type="application/rss+xml" title="Status Rodeo" href="/feed.xml" />\n  </head>';
+const SHELL = '<head>\n    <title>Status Rodeo</title>\n    <meta property="og:title" content="Status Rodeo" />\n    <meta property="og:image" content="https://status.rodeo/default.webp" />\n    <meta name="twitter:card" content="summary" />\n    <link rel="alternate" type="application/rss+xml" title="Status Rodeo" href="/feed.xml" />\n  </head>';
 
-// Stands in for Cloudflare's HTMLRewriter: runs the handler registered for the selector
-// on the first matching <link> and applies `before` to the text.
-class FakeRewriter {
-  on(selector, handlers) {
-    assert.equal(selector, 'link[rel="alternate"][type="application/rss+xml"]');
-    this.handlers = handlers;
-    return this;
-  }
-
-  transform(response) {
-    let out = SHELL;
-    this.handlers.element({
-      before(html, options) {
-        assert.deepEqual(options, { html: true });
-        out = SHELL.replace(/ *<link rel="alternate"[^>]*>/, (existing) => `    ${html}${existing.trimStart()}`);
-      },
-    });
-
-    return new Response(out, { status: response.status, headers: response.headers });
-  }
-}
+const FakeRewriter = createFakeRewriter(SHELL);
 
 function shell(init = {}) {
   return new Response(SHELL, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', ETag: '"abc"', ...init.headers } });
@@ -51,7 +32,7 @@ function fakeSupabase({ profiles = [], error = null, hang = false, spy = [] } = 
   };
 }
 
-const chris = { username: 'chris', display_name: 'Chris' };
+const chris = { username: 'chris', display_name: 'Chris', avatar: 'sheriff-star' };
 const get = (path = '/users/chris') => new Request('https://status.rodeo' + path);
 const options = { Rewriter: FakeRewriter, timeoutMs: 50 };
 
@@ -78,7 +59,7 @@ test('a known user gets their feed link ahead of the sitewide one, and the ETag 
   assert.equal(response.headers.get('ETag'), null);
   assert.equal(response.status, 200);
   assert.deepEqual(spy[0].filters, [['username', 'chris']]);
-  assert.equal(spy[0].columns, 'username, display_name');
+  assert.equal(spy[0].columns, 'username, display_name, avatar');
 });
 
 test('an unknown user, a bad username or a failed lookup leaves the page unchanged', async () => {
@@ -124,4 +105,31 @@ test('HEAD, non-HTML, error responses and a missing rewriter are passed through 
   }
 
   assert.equal(spy.length, 0);
+});
+
+test('a known user gets their own preview tags instead of the default set', async () => {
+  const html = await (await userPage(fakeSupabase({ profiles: [chris] }), get(), 'chris', shell(), options)).text();
+
+  assert.equal((html.match(/property="og:title"/g) ?? []).length, 1);
+  assert.equal((html.match(/name="twitter:card"/g) ?? []).length, 1);
+  assert.ok(!html.includes('default.webp'));
+  assert.ok(html.includes('<meta property="og:title" content="Chris (@chris)" />'));
+  assert.ok(html.includes('<meta property="og:url" content="https://status.rodeo/users/chris" />'));
+  assert.ok(html.includes('<meta property="og:image" content="https://status.rodeo/avatars/icons/sheriff-star.webp" />'));
+  assert.ok(html.includes('content="Statuses from Chris (@chris) on Status Rodeo."'));
+});
+
+test('profile preview escapes the name and shows the default icon for an unknown avatar value', () => {
+  const markup = profilePreviewMarkup({ username: 'a.b', display_name: 'Sam "S" <x>', avatar: '../chris' });
+
+  assert.ok(markup.includes('content="Sam &quot;S&quot; &lt;x&gt; (@a.b)"'));
+  assert.ok(markup.includes('/avatars/icons/cowboy-hat.webp'));
+  assert.ok(!markup.includes('../chris'));
+  assert.ok(!markup.includes('<x>'));
+});
+
+test('an unknown user keeps the default preview tags', async () => {
+  const html = await (await userPage(fakeSupabase({ profiles: [] }), get('/users/nobody'), 'nobody', shell(), options)).text();
+
+  assert.ok(html.includes('default.webp'));
 });

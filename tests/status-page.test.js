@@ -1,31 +1,13 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
+import { createFakeRewriter } from './fake-rewriter.js';
 import { DESCRIPTION_LIMIT, previewMarkup, statusPage } from '../src/status-page.js';
 
 mock.method(console, 'warn', () => {});
 
-const SHELL = '<head>\n    <title>Status Rodeo</title>\n  </head>';
+const SHELL = '<head>\n    <title>Status Rodeo</title>\n    <meta property="og:title" content="Status Rodeo" />\n    <meta property="og:image" content="https://status.rodeo/default.webp" />\n    <meta name="twitter:card" content="summary" />\n  </head>';
 
-// Stands in for Cloudflare's HTMLRewriter: appends the markup inside <head>.
-class FakeRewriter {
-  on(selector, handlers) {
-    assert.equal(selector, 'head');
-    this.handlers = handlers;
-    return this;
-  }
-
-  transform(response) {
-    let out = SHELL;
-    this.handlers.element({
-      append(html, options) {
-        assert.deepEqual(options, { html: true });
-        out = SHELL.replace('</head>', `${html}</head>`);
-      },
-    });
-
-    return new Response(out, { status: response.status, headers: response.headers });
-  }
-}
+const FakeRewriter = createFakeRewriter(SHELL);
 
 const shell = (headers = {}) =>
   new Response(SHELL, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', ETag: '"abc"', ...headers } });
@@ -135,4 +117,19 @@ test('HEAD, non-HTML, error responses and a missing rewriter pass through withou
   }
 
   assert.equal(spy.length, 0);
+});
+
+test('a public status replaces the shell\'s default preview tags with its own', async () => {
+  const html = await (await statusPage(fakeSupabase(), get(), '7', shell(), options)).text();
+
+  assert.equal((html.match(/property="og:title"/g) ?? []).length, 1);
+  assert.equal((html.match(/name="twitter:card"/g) ?? []).length, 1);
+  assert.ok(!html.includes('default.webp'));
+  assert.ok(html.includes('content="Status by Sofie (@sofie)"'));
+});
+
+test('a missing status keeps the default preview tags', async () => {
+  const html = await (await statusPage(fakeSupabase(), get(), '999', shell(), options)).text();
+
+  assert.ok(html.includes('default.webp'));
 });

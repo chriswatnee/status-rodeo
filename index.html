@@ -9,6 +9,19 @@
     <title>Status Rodeo</title>
     <meta name="description" content="Short statuses from a small herd of friends. Read the latest from everyone, or follow along by RSS." />
     <meta name="theme-color" content="#f5dab3" />
+    <!-- Default link preview (the home page, and any page without its own). A status page and a
+         profile page replace this set with their own in the Cloudflare functions
+         (src/status-page.js, src/user-page.js), which remove every og:* and twitter:card tag. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Status Rodeo" />
+    <meta property="og:title" content="Status Rodeo" />
+    <meta property="og:description" content="Short statuses from a small herd of friends. Read the latest from everyone, or follow along by RSS." />
+    <meta property="og:url" content="https://status.rodeo/" />
+    <meta property="og:image" content="https://status.rodeo/avatars/icons/sheriff-star.webp" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="A sheriff's star" />
+    <meta name="twitter:card" content="summary" />
     <link rel="alternate" type="application/rss+xml" title="Status Rodeo" href="/feed.xml" />
   </head>
   <body>
