@@ -371,6 +371,53 @@ textarea:focus-visible {
   opacity: 1;
 }
 
+/* A small loading indicator for the moment the app is held back (see revealWhenFontsReady()).
+   It appears only after 0.5 s, so a normal load never shows it, then gently pulses. Gone as
+   soon as `fonts-pending` is removed. */
+#boot {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  display: none;
+  translate: -50% -50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.fonts-pending #boot {
+  display: block;
+  animation:
+    boot-in 0.4s ease-out 0.5s forwards,
+    boot-pulse 1.4s ease-in-out 0.9s infinite;
+}
+
+#boot img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--avatar-border);
+  border-radius: var(--radius-avatar);
+  background: var(--avatar-bg);
+}
+
+@keyframes boot-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes boot-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fonts-pending #boot {
+    animation: boot-in 0.4s ease-out 0.5s forwards;
+  }
+}
+
 /* The app is hidden until the fonts are ready (see revealWhenFontsReady()), then fades in. */
 #app {
   transition: opacity 0.25s ease-out;
