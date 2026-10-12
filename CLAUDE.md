@@ -756,7 +756,7 @@ result with the module's current session rather than calling `getSession()`
 again, which could answer "no session" for a moment and silently drop the
 identity. Signing out stops the retries.
 
-Loading states: the masthead reserves its space (about 5.3:1, 3.1:1 on phones) with dark wood colour, so the cream title is readable before the picture arrives. Avatars
+Loading states: the masthead reserves its space (about 5.3:1, 3.1:1 on phones) in the page colour with no shadow and the title hidden, so nothing dark flashes; the picture and title then fade together (0.25s, off under reduced motion) when the image loads (`data-loaded` on `.masthead`, set by `watchMasthead()` in `src/main.js`). If the picture hasn't loaded after 8 s the masthead turns dark wood with the title showing (`data-loaded="failed"`), so it is never blank. A late retry that succeeds then shows the picture on top. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
 sign-in form stays hidden until the session is known. An avatar that fails or

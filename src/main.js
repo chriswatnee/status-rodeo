@@ -226,6 +226,7 @@ function mount(markup, { linkHome }) {
       </main>
     `;
     frame = { page: app.querySelector('#page') };
+    watchMasthead();
     initSidebar();
   }
 
@@ -2465,6 +2466,26 @@ function masthead() {
       <h1 class="masthead-title">Status Rodeo</h1>
     </header>
   `;
+}
+
+// Until the picture has arrived the masthead is an empty box in the page colour with
+// the title hidden (`data-loaded` missing), then the picture and title fade in together.
+// If the picture still hasn't loaded after 8 s (or every retry failed) the masthead falls
+// back to dark wood with the title showing (`data-loaded="failed"`), so it never stays blank.
+function watchMasthead() {
+  const header = app.querySelector('.masthead');
+  const image = header.querySelector('.masthead-image');
+  const show = () => header.setAttribute('data-loaded', 'true');
+
+  if (image.complete && image.naturalWidth > 0) {
+    show();
+    return;
+  }
+
+  image.addEventListener('load', show, { once: true });
+  setTimeout(() => {
+    if (!header.hasAttribute('data-loaded')) header.setAttribute('data-loaded', 'failed');
+  }, 8000);
 }
 
 // Makes the title a link home, or plain text again. The picture is not touched, so it
