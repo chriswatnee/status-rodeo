@@ -877,7 +877,10 @@ function showAvatarEditor(body, me) {
 
     const image = new Image();
     image.alt = '';
+    image.classList.add('fade-img');
+    image.addEventListener('load', () => image.classList.add('is-loaded'));
     image.src = avatarPath(icon.name);
+    if (image.complete) image.classList.add('is-loaded');
     button.append(image);
 
     button.addEventListener('click', () => choose(icon.name));
@@ -2504,4 +2507,21 @@ function setMastheadLink(linkHome) {
   }
 }
 
+// The app stays hidden (in the page colour) until the two fonts are ready, then fades in,
+// so text never shows in a fallback font and jumps. `fonts-pending` is set on <html> in
+// index.html. Gives up after 2.5 s (the fonts are preloaded, so this is rare) and shows the
+// page anyway; with `font-display: block` it then re-draws when the fonts arrive.
+function revealWhenFontsReady() {
+  const reveal = () => document.documentElement.classList.remove('fonts-pending');
+  const fonts = document.fonts;
+
+  if (!fonts?.load) return reveal();
+
+  Promise.race([
+    Promise.all([fonts.load("700 1em 'Zilla Slab'"), fonts.load("400 1em 'Nunito'")]),
+    new Promise((resolve) => setTimeout(resolve, 2500)),
+  ]).then(reveal, reveal);
+}
+
+revealWhenFontsReady();
 route();

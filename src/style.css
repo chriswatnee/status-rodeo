@@ -15,7 +15,7 @@
   src: url('/fonts/nunito-variable.woff') format('woff');
   font-weight: 400 800;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 /*
@@ -351,6 +351,44 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Avatars are only added once loaded; they fade in over the placeholder. */
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Images that sit in the page while they load (the avatar picker). */
+.fade-img {
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+
+.fade-img.is-loaded {
+  opacity: 1;
+}
+
+/* The app is hidden until the fonts are ready (see revealWhenFontsReady()), then fades in. */
+#app {
+  transition: opacity 0.25s ease-out;
+}
+
+.fonts-pending #app {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar img {
+    animation: none;
+  }
+
+  .fade-img,
+  #app {
+    transition: none;
+  }
 }
 
 /* The page area takes focus after navigation; it isn't a control, so no ring. */
