@@ -862,6 +862,11 @@ textarea:focus-visible {
   }
 }
 
+.profile-edit[data-pending] {
+  /* Holds the button's place until we know whether this is the visitor's own profile. */
+  visibility: hidden;
+}
+
 .profile-edit .icon {
   color: inherit;
 }
