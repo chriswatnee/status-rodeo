@@ -3,7 +3,11 @@
   src: url('/fonts/zilla-slab-bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  /* block, not swap: the title is laid over a painted sign, so showing it in
+     Georgia first and then jumping to Zilla Slab is what made the header flash.
+     Hidden for a moment (at most 3 s, usually none because the font is preloaded)
+     is steadier than a changing shape. */
+  font-display: block;
 }
 
 @font-face {

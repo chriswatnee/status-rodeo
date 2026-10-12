@@ -404,7 +404,9 @@ was made in ChatGPT as 1254x1254 PNGs; the originals are kept outside the repo. 
 means adding the file, an entry in `AVATAR_ICONS` (the test checks the folder matches the list)
 and nothing in the database. The display
 font is self-hosted Zilla Slab Bold (`public/fonts/zilla-slab-bold.woff2`, used
-for the feed heading and profile name). Body text, statuses and controls use self-hosted Nunito
+for the feed heading and profile name; both fonts are preloaded in `index.html`, and Zilla Slab uses
+`font-display: block` so the masthead title never shows in a fallback font and then jumps. Keep the
+preload `crossorigin` attribute or the browser fetches the font twice). Body text, statuses and controls use self-hosted Nunito
 (`public/fonts/nunito-variable.woff`, a Latin subset of the variable font limited to
 weights 400-800, `--font-body`), with the system sans-serif as the fallback; form
 controls inherit it. Lora (a serif) was tried and rejected because it made the feed
