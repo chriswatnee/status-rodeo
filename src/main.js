@@ -671,10 +671,11 @@ function showAvatarEverywhere(username, avatar) {
 
 // The Edit profile page (/profile/edit): your own profile, for the signed-in user (a signed-out
 // visitor is told to sign in, and the page fills in when they do). For now the only thing to
-// edit is the avatar: the twelve icons as buttons (aria-pressed marks the one in use). Tapping
-// one saves it at once: the avatar changes everywhere on the page right away and goes back,
-// with a message, if the save fails. One save at a time. The database allows the same and
-// nothing more: only your own row's avatar column can be updated.
+// edit is the avatar: the twelve icons as buttons (aria-pressed marks the chosen one). Picking
+// one only previews it on this page; Save stores it (and then the avatar changes everywhere),
+// Cancel puts the saved one back, and leaving the page drops an unsaved choice. One save at a
+// time. The database allows the same and nothing more: only your own row's avatar column can
+// be updated.
 function renderEditProfile() {
   mount(`
           <section class="feed-panel edit-profile">
@@ -718,7 +719,7 @@ function renderEditProfile() {
 
 function showAvatarEditor(body, me) {
   body.innerHTML = `
-            <div class="edit-form">
+            <form class="edit-form" novalidate>
               <div class="edit-identity">
                 <span id="edit-avatar"></span>
                 <div>
@@ -732,8 +733,13 @@ function showAvatarEditor(body, me) {
               <div class="avatar-choices" role="group" aria-labelledby="avatar-heading" aria-describedby="avatar-help"></div>
               <p class="edit-note" role="status"></p>
 
+              <div class="edit-actions">
+                <button type="submit" class="edit-save" disabled>Save</button>
+                <button type="button" class="edit-cancel" disabled>Cancel</button>
+              </div>
+
               <p class="edit-back"><a class="edit-back-link" href="">Back to my profile</a></p>
-            </div>
+            </form>
   `;
 
   body.querySelector('.edit-name').textContent = me.display_name;
@@ -744,43 +750,82 @@ function showAvatarEditor(body, me) {
   const form = body.querySelector('.edit-form');
   const choices = form.querySelector('.avatar-choices');
   const note = form.querySelector('.edit-note');
+  const saveButton = form.querySelector('.edit-save');
+  const cancelButton = form.querySelector('.edit-cancel');
+  let chosen = avatarName(me.avatar); // what is selected on this page
   let saving = false;
 
-  function markChosen() {
+  const isChanged = () => chosen !== avatarName(me.avatar);
+
+  // Selection, preview and the buttons all follow `chosen`. Only the avatar on this page
+  // changes before Save; the sidebar, composer and feed keep the stored one.
+  function refresh() {
     for (const button of choices.children) {
-      button.setAttribute('aria-pressed', String(button.dataset.avatar === avatarName(me.avatar)));
+      button.setAttribute('aria-pressed', String(button.dataset.avatar === chosen));
     }
+
+    form.querySelector('#edit-avatar').replaceChildren(createAvatar(chosen));
+    saveButton.disabled = saving || !isChanged();
+    cancelButton.disabled = saving || !isChanged();
   }
 
-  async function choose(name) {
+  function choose(name) {
+    if (saving || name === chosen) return;
+
+    chosen = name;
+    setErrorNote(note, '');
+    note.textContent = isChanged() ? 'Not saved yet.' : '';
+    refresh();
+  }
+
+  cancelButton.addEventListener('click', () => {
+    if (saving) return;
+
+    chosen = avatarName(me.avatar);
+    setErrorNote(note, '');
+    note.textContent = '';
+    refresh();
+    choices.querySelector('[aria-pressed="true"]')?.focus();
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
     const userId = currentSession?.user.id;
 
-    if (saving || !userId || userId !== me.user_id || name === avatarName(me.avatar)) return;
+    if (saving || !isChanged() || !userId || userId !== me.user_id) return;
 
-    const previous = avatarName(me.avatar);
+    const name = chosen;
+    const saveLabel = saveButton.textContent;
 
     saving = true;
     form.setAttribute('aria-busy', 'true');
+    saveButton.style.width = `${saveButton.getBoundingClientRect().width}px`;
+    saveButton.textContent = 'Saving…';
+    saveButton.setAttribute('aria-busy', 'true');
     setErrorNote(note, '');
-    me.avatar = name;
-    showAvatarEverywhere(me.username, name);
-    markChosen();
+    refresh();
 
     const result = await setAvatar(supabase, { userId, avatar: name });
 
     saving = false;
     form.removeAttribute('aria-busy');
+    saveButton.textContent = saveLabel;
+    saveButton.removeAttribute('aria-busy');
+    saveButton.style.width = '';
 
     if (result.ok) {
+      me.avatar = name;
+      showAvatarEverywhere(me.username, name);
       // The note is a live region, so this is also what a screen reader hears.
-      note.textContent = `Avatar changed to ${avatarLabel(name).toLowerCase()}.`;
+      note.textContent = `Avatar saved as ${avatarLabel(name).toLowerCase()}.`;
+      refresh();
+      // The Save button is disabled again, so keep the keyboard focus on the page.
+      choices.querySelector('[aria-pressed="true"]')?.focus();
       return;
     }
 
     console.error(result.error);
-    me.avatar = previous;
-    showAvatarEverywhere(me.username, previous);
-    markChosen();
 
     if (result.reason === 'session-expired') {
       // Signing out replaces this page's content, so the message goes with the sign-in form.
@@ -792,8 +837,10 @@ function showAvatarEditor(body, me) {
       return;
     }
 
+    // The choice stays selected so Save can be tried again.
     setErrorNote(note, "Couldn't save your avatar. Try again.");
-  }
+    refresh();
+  });
 
   for (const icon of AVATAR_ICONS) {
     const button = document.createElement('button');
@@ -812,7 +859,7 @@ function showAvatarEditor(body, me) {
     choices.append(button);
   }
 
-  markChosen();
+  refresh();
 }
 
 // One status on its own page (/statuses/<id>), the stable address for a status. It
