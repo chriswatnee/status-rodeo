@@ -981,11 +981,10 @@ textarea:focus-visible {
 
 /* Feed */
 
-.feed-panel {
-  overflow: hidden;
-}
-
+/* No overflow:hidden on the panel: the "…" menu on a status near the bottom has to be able to
+   open past the panel's edge. The heading band follows the panel's rounded top corners itself. */
 .panel-heading {
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1221,6 +1220,7 @@ textarea:focus-visible {
 }
 
 .status-body {
+  position: relative;
   min-width: 0;
 }
 
@@ -1411,6 +1411,195 @@ textarea:focus-visible {
   padding: 0.4rem 0.65rem;
   border-radius: var(--radius-small);
   background: var(--warn-tint);
+}
+
+/* The "…" menu on your own statuses (owner only, see syncStatusMenus in src/main.js). The button
+   sits in the top right corner of the row; the header makes room for it. */
+.status.has-menu .status-meta {
+  padding-right: 2.2rem;
+}
+
+.status-menu {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+}
+
+.status-menu-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+}
+
+/* The button is small; this invisible layer makes the tappable area 44px or more and keeps
+   it that size while the button is pressed (see the other buttons). */
+.status-menu-button::after {
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+}
+
+.status-menu-button .icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: inherit;
+}
+
+.status-menu-button:active {
+  transform: scale(0.96);
+}
+
+.status-menu-button[aria-expanded='true'] {
+  background: var(--nav-active);
+  color: var(--heading);
+}
+
+.status-menu-list {
+  position: absolute;
+  top: calc(100% + 0.15rem);
+  right: 0;
+  z-index: 5;
+  min-width: 9.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.status-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  font-size: 1.05rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.status-menu-item .icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: inherit;
+}
+
+.status-menu-delete {
+  color: var(--warn);
+}
+
+.status-menu-item:focus {
+  background: var(--nav-active);
+}
+
+@media (hover: hover) {
+  .status-menu-button:hover {
+    background: var(--nav-active);
+    color: var(--heading);
+  }
+
+  .status-menu-item:hover {
+    background: var(--nav-active);
+  }
+}
+
+/* "Delete this status?" under the status text. */
+.status-confirm {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--band);
+}
+
+.status-confirm-text {
+  font-size: 1rem;
+}
+
+.status-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.status-confirm button {
+  position: relative;
+  min-height: 2.75rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: var(--radius-button);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+}
+
+.status-confirm button::after {
+  content: '';
+  position: absolute;
+  inset: -3%;
+}
+
+.status-confirm-delete {
+  border: 1px solid var(--button-edge);
+  background: var(--warn);
+  color: var(--button-text);
+}
+
+.status-confirm-cancel {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--link);
+}
+
+.status-confirm button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.status-confirm button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status-confirm button[aria-busy='true'] {
+  cursor: progress;
+}
+
+.status-confirm-note {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.status-confirm-note:empty {
+  display: none;
+}
+
+.status-confirm-note:has(.icon-error) {
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-small);
+  background: var(--warn-tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-menu-button,
+  .status-confirm button {
+    transition: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

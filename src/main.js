@@ -5,6 +5,7 @@ import { submitStatus } from './post-status.js';
 import { readSortOrder, saveSortOrder } from './sort-order.js';
 import { AVATAR_ICONS, avatarLabel, avatarName, avatarPath } from './avatar-icons.js';
 import { setAvatar } from './set-avatar.js';
+import { deleteStatus } from './delete-status.js';
 import { relativeTime, absoluteTime } from './relative-time.js';
 import { iconMarkup } from './icons.js';
 import { createHatTipStore, hatTipCountText } from './hat-tips.js';
@@ -220,6 +221,7 @@ function mount(markup, { linkHome }) {
           <div class="main-content" id="page" tabindex="-1"></div>
         </div>
         <p id="route-announcer" class="visually-hidden" role="status"></p>
+        <p id="status-announcer" class="visually-hidden" role="status"></p>
       </main>
     `;
     frame = { page: app.querySelector('#page') };
@@ -638,6 +640,16 @@ async function renderUserPage(username, isCurrent) {
 
   pager.load();
 
+  // The profile's status count follows deletes made on this page.
+  let statusCount = null;
+
+  feed.addEventListener('statusdeleted', () => {
+    if (statusCount !== null && statusCount > 0) {
+      statusCount -= 1;
+      setMeta(statusCount);
+    }
+  });
+
   const { count, error: countError } = await supabase
     .from('statuses')
     .select('id', { count: 'exact', head: true })
@@ -647,6 +659,7 @@ async function renderUserPage(username, isCurrent) {
   if (countError) {
     console.error(countError);
   } else if (count !== null) {
+    statusCount = count;
     setMeta(count);
   }
 }
@@ -941,6 +954,7 @@ async function renderStatusPage(segment, isCurrent) {
         createdAt: status.created_at,
       })
     );
+    syncStatusMenus();
     loadHatTips([status.id]);
     resolveMentions();
   }
@@ -1006,6 +1020,8 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
       feed.append(row);
     });
 
+    syncStatusMenus();
+
     cursor = rows[rows.length - 1].created_at;
 
     loadHatTips(rows.map((status) => status.id));
@@ -1060,6 +1076,12 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     appendRows(page.rows, options.motion);
     more.hidden = !page.hasMore;
   }
+
+  // A deleted status leaves the feed (see removeDeletedStatus). If that was the last row on
+  // the page, start over: the next page of statuses (or the empty message) takes its place.
+  feed.addEventListener('statusdeleted', () => {
+    if (!feed.querySelector('.status')) load();
+  });
 
   sortSelect.addEventListener('change', () => {
     saveSortOrder(sortSelect.value);
@@ -1245,6 +1267,7 @@ function initSidebar() {
 
     currentProfile = profile;
     updateNav();
+    syncStatusMenus();
     pageHooks.onProfile?.(profile);
   }
 
@@ -1253,6 +1276,7 @@ function initSidebar() {
     currentSession = session;
     if (!session) currentProfile = undefined;
 
+    syncStatusMenus();
     pageHooks.onSession?.(session);
     syncHatTips(session);
 
@@ -1593,6 +1617,7 @@ function createStatusRow({ id, username, displayName, avatar, content, createdAt
   article.className = 'status';
   // So a changed avatar can be swapped in on rows already on the page.
   article.dataset.username = username;
+  if (id !== undefined) article.dataset.statusId = String(id);
 
   const name = document.createElement('a');
   name.className = 'status-name';
@@ -1808,6 +1833,310 @@ function syncHatTips(session) {
   const ids = [...document.querySelectorAll('[data-hat-status]')].map((actions) => Number(actions.dataset.hatStatus));
 
   if (ids.length > 0) loadHatTips(ids);
+}
+
+// The "…" menu on your own statuses. It exists only on rows whose @username is the signed-in
+// user's (syncStatusMenus adds and removes it when the signed-in state or the rows change), so
+// other people and signed-out visitors never see it. The database allows the same and nothing
+// more: only your own rows can be deleted. For now the only item is Delete.
+let statusMenuSerial = 0;
+
+function createStatusMenu(row) {
+  const serial = ++statusMenuSerial;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'status-menu';
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'status-menu-button';
+  button.setAttribute('aria-haspopup', 'menu');
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-controls', `status-menu-${serial}`);
+  button.setAttribute('aria-label', 'More actions for your status');
+  button.title = 'More actions';
+  button.innerHTML = iconMarkup('more');
+
+  const list = document.createElement('div');
+  list.className = 'status-menu-list';
+  list.id = `status-menu-${serial}`;
+  list.setAttribute('role', 'menu');
+  list.setAttribute('aria-label', 'Your status');
+  list.hidden = true;
+
+  const deleteItem = document.createElement('button');
+  deleteItem.type = 'button';
+  deleteItem.className = 'status-menu-item status-menu-delete';
+  deleteItem.setAttribute('role', 'menuitem');
+  deleteItem.innerHTML = `${iconMarkup('delete')}<span>Delete</span>`;
+
+  list.append(deleteItem);
+  wrap.append(button, list);
+
+  deleteItem.addEventListener('click', () => {
+    closeStatusMenu(wrap);
+    showDeleteConfirm(row, button);
+  });
+
+  return wrap;
+}
+
+function statusMenuItems(wrap) {
+  return [...wrap.querySelectorAll('[role="menuitem"]')];
+}
+
+function openStatusMenu(wrap) {
+  closeStatusMenus(wrap);
+
+  wrap.querySelector('.status-menu-list').hidden = false;
+  wrap.querySelector('.status-menu-button').setAttribute('aria-expanded', 'true');
+  statusMenuItems(wrap)[0]?.focus();
+}
+
+function closeStatusMenu(wrap, returnFocus = false) {
+  const list = wrap.querySelector('.status-menu-list');
+
+  if (list.hidden) return;
+
+  list.hidden = true;
+  wrap.querySelector('.status-menu-button').setAttribute('aria-expanded', 'false');
+
+  if (returnFocus) wrap.querySelector('.status-menu-button').focus();
+}
+
+// Closes every open menu (except `keep`), without moving focus.
+function closeStatusMenus(keep = null) {
+  for (const wrap of document.querySelectorAll('.status-menu')) {
+    if (wrap !== keep) closeStatusMenu(wrap);
+  }
+}
+
+// One set of listeners for every menu on the page (menus come and go with the rows).
+document.addEventListener('click', (event) => {
+  const button = event.target.closest?.('.status-menu-button');
+
+  if (!button) return;
+
+  const wrap = button.closest('.status-menu');
+
+  if (button.getAttribute('aria-expanded') === 'true') {
+    closeStatusMenu(wrap);
+  } else {
+    openStatusMenu(wrap);
+  }
+});
+
+// Clicking or tapping anywhere outside an open menu closes it.
+document.addEventListener('pointerdown', (event) => {
+  for (const wrap of document.querySelectorAll('.status-menu')) {
+    if (!wrap.contains(event.target)) closeStatusMenu(wrap);
+  }
+});
+
+// Moving focus out of an open menu (Tab, or a click elsewhere) closes it.
+document.addEventListener('focusin', (event) => {
+  for (const wrap of document.querySelectorAll('.status-menu')) {
+    if (!wrap.contains(event.target)) closeStatusMenu(wrap);
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  const wrap = event.target.closest?.('.status-menu');
+
+  if (!wrap) return;
+
+  const button = wrap.querySelector('.status-menu-button');
+  const open = button.getAttribute('aria-expanded') === 'true';
+  const items = statusMenuItems(wrap);
+
+  if (event.key === 'Escape' && open) {
+    event.preventDefault();
+    closeStatusMenu(wrap, true);
+    return;
+  }
+
+  if (event.target === button && !open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+    event.preventDefault();
+    openStatusMenu(wrap);
+    return;
+  }
+
+  if (!open || !items.includes(event.target)) return;
+
+  const index = items.indexOf(event.target);
+  const target = {
+    ArrowDown: items[(index + 1) % items.length],
+    ArrowUp: items[(index - 1 + items.length) % items.length],
+    Home: items[0],
+    End: items[items.length - 1],
+  }[event.key];
+
+  if (target) {
+    event.preventDefault();
+    target.focus();
+  } else if (event.key === 'Tab') {
+    closeStatusMenu(wrap, true);
+  }
+});
+
+// Gives your own rows their menu and takes it away from everyone else's. Run whenever rows are
+// drawn and whenever the signed-in state or profile changes.
+function syncStatusMenus() {
+  const me = currentSession ? currentProfile?.username : undefined;
+
+  for (const row of document.querySelectorAll('.status[data-status-id]')) {
+    const mine = me !== undefined && row.dataset.username === me;
+    const menu = row.querySelector('.status-menu');
+
+    if (mine && !menu) {
+      row.classList.add('has-menu');
+      row.querySelector('.status-meta').after(createStatusMenu(row));
+    } else if (!mine && menu) {
+      menu.remove();
+      row.classList.remove('has-menu');
+      row.querySelector('.status-confirm')?.remove();
+    }
+  }
+}
+
+// The question under the status text: "Delete this status?" with Delete and Cancel. Cancel has the
+// focus, so Enter by mistake doesn't delete anything. Escape cancels.
+function showDeleteConfirm(row, menuButton) {
+  const existing = row.querySelector('.status-confirm');
+
+  if (existing) {
+    existing.querySelector('.status-confirm-cancel').focus();
+    return;
+  }
+
+  const confirm = document.createElement('div');
+  confirm.className = 'status-confirm';
+  confirm.setAttribute('role', 'group');
+  confirm.setAttribute('aria-label', 'Delete this status');
+
+  const text = document.createElement('div');
+  text.className = 'status-confirm-text';
+  text.textContent = "Delete this status? This can't be undone.";
+
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'status-confirm-delete';
+  deleteButton.textContent = 'Delete';
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'status-confirm-cancel';
+  cancelButton.textContent = 'Cancel';
+
+  const actions = document.createElement('div');
+  actions.className = 'status-confirm-actions';
+  actions.append(deleteButton, cancelButton);
+
+  const note = document.createElement('div'); // a live region: failures are read out
+  note.className = 'status-confirm-note';
+  note.setAttribute('role', 'status');
+
+  confirm.append(text, actions, note);
+  row.querySelector('.status-body > p').after(confirm);
+  cancelButton.focus();
+
+  let deleting = false;
+
+  function cancel() {
+    if (deleting) return;
+
+    const returnTo = menuButton.isConnected ? menuButton : null;
+
+    confirm.remove();
+    returnTo?.focus();
+  }
+
+  cancelButton.addEventListener('click', cancel);
+
+  confirm.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel();
+    }
+  });
+
+  deleteButton.addEventListener('click', async () => {
+    if (deleting) return;
+
+    deleting = true;
+    deleteButton.textContent = 'Deleting…';
+    deleteButton.setAttribute('aria-busy', 'true');
+    deleteButton.disabled = true;
+    cancelButton.disabled = true;
+    note.textContent = '';
+
+    const result = await deleteStatus(supabase, { id: Number(row.dataset.statusId) });
+
+    // The visitor may have moved on, or signed out (which removes the question), meanwhile.
+    if (!confirm.isConnected && !result.ok) {
+      if (result.reason === 'session-expired') showSessionExpiredForDelete();
+      return;
+    }
+
+    if (result.ok) {
+      removeDeletedStatus(row);
+      return;
+    }
+
+    deleting = false;
+    deleteButton.textContent = 'Delete';
+    deleteButton.removeAttribute('aria-busy');
+    deleteButton.disabled = false;
+    cancelButton.disabled = false;
+
+    if (result.reason === 'session-expired') {
+      showSessionExpiredForDelete();
+      return;
+    }
+
+    console.error(result.error);
+    setErrorNote(note, "Couldn't delete this status. Try again.");
+  });
+}
+
+// The login is gone: sign out here and say so in the sign-in form, like the other saves.
+async function showSessionExpiredForDelete() {
+  await expireSession();
+
+  const loginError = document.querySelector('#login-error');
+  setErrorNote(loginError, 'Your session expired. Sign in again to delete your status.');
+  loginError.hidden = false;
+}
+
+function announceStatus(text) {
+  const announcer = document.querySelector('#status-announcer');
+
+  announcer.textContent = '';
+  setTimeout(() => {
+    announcer.textContent = text;
+  }, 50);
+}
+
+// The status is deleted: take its row out of the page. On its own page there is nothing left to
+// show, so go home. In a feed, focus goes to the next row (or the one before it) so a keyboard
+// user keeps their place; the feed and the profile's status count find out through an event.
+function removeDeletedStatus(row) {
+  const feed = row.parentElement;
+  const neighbour = row.nextElementSibling?.matches('.status') ? row.nextElementSibling : row.previousElementSibling;
+  const onStatusPage = window.location.pathname.split('/').filter(Boolean)[0] === 'statuses';
+
+  row.remove();
+  announceStatus('Status deleted.');
+
+  if (onStatusPage) {
+    navigate('/');
+    return;
+  }
+
+  const focusTarget = neighbour?.matches?.('.status') ? neighbour.querySelector('.status-name') : null;
+
+  (focusTarget ?? frame.page).focus({ preventScroll: true });
+  feed.dispatchEvent(new Event('statusdeleted', { bubbles: true }));
 }
 
 function createTimeElement(createdAt) {
