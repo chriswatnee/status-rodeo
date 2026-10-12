@@ -25,7 +25,7 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic, the avatar icons and the avatar save, the hat tips logic, the status id
+  length rule, the posting logic, the avatar icons and the avatar save, the status delete, the hat tips logic, the status id
   parser, link detection, the profile page's feed autodiscovery, the status link previews, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
@@ -102,6 +102,13 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   or `failed`; never throws. Unit tested. The picker is `showAvatarEditor()` on the Edit profile
   page (`renderEditProfile()` in `src/main.js`), a form with Save and Cancel; see "Edit profile
   page" under Design direction.
+- `src/delete-status.js` deletes one of the signed-in user's own statuses (no DOM, unit tested):
+  `deleteStatus()` runs `delete().eq('id', id).select('id')` and counts the rows that come back, because
+  a refused delete is not an error to PostgREST. Zero rows is followed by one read: the status is gone
+  (deleted elsewhere) counts as done, still there means refused. Results are ok, `invalid` (id not a
+  positive whole number, nothing sent), `session-expired` or `failed`; never throws. The "…" menu that
+  uses it is `createStatusMenu()` / `showDeleteConfirm()` in `src/main.js`; see "Your own statuses"
+  under Design direction.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
@@ -271,10 +278,11 @@ only (so `id`, `user_id`, `visibility`, `created_at` and `edited_at` stay read-o
 and "Users can delete their own statuses" plus `DELETE` for `authenticated` (hat tips go with a deleted
 status through `ON DELETE CASCADE`). `anon` has neither UPDATE nor DELETE. It was applied by hand (by
 Muse) on 2026-10-12 and checked with `supabase/status-edit-delete-verify.sql`: 23 of 24 rows
-`ok = true` as reported to Chris (all behaviour checks passed; the false row was the script's check
-on the constraint's name, now replaced by a check on what the constraint enforces; the results were not
-pasted into the session). Re-run the verify script once to confirm 24 of 24, and after any change to
-these objects; it rolls back everything it does. Code may now select `statuses.edited_at`.
+`ok = true` at first (all behaviour checks passed; the false row was the script's check on the
+constraint's name, since replaced by a check on what the constraint enforces; the results were not
+pasted into the session). Re-run on 2026-10-12 after the fix: 24 of 24 `ok = true` (as reported to Chris).
+Re-run it after any change to these objects; it rolls back everything it does. Code may now select
+`statuses.edited_at`; the delete UI uses the delete policy.
 
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
@@ -330,13 +338,14 @@ redirect URLs are configured.
   (`<span class="icon" aria-hidden="true">`), for use beside text that already
   names the action; the icon is sized `1.2rem` and coloured `--heading`. Icons are
   used only beside labels of things that already work: the nav items (home,
-  profile), Post (pencil), Sign in, Sign out, Edit profile (edit-profile), the Tip your hat button (hat-tip) and
+  profile), Post (pencil), Sign in, Sign out, Edit profile (edit-profile), the Tip your hat button (hat-tip), the owner's "…" menu button (more) and its Delete item (delete) and
   failure messages (error, via
   `setErrorNote()` and the `icon-error` class, which uses the warning colour).
   "Try again" is a plain link without an icon. Icons inside buttons take the
   button's text colour. Don't add links, features or per-status icons (like,
-  reply, share, menu) just because an icon exists; the hat tip is the only per-status
-  control, and the heart (`like`) stays unused. Sign out is styled like a nav
+  reply, share) just because an icon exists; the hat tip is the only per-status control for
+  everyone, the "…" menu is for the status's owner only (see "Your own statuses"), and the heart
+  (`like`) stays unused. Sign out is styled like a nav
   item (under a small "Signed in" label; on phones only the button shows and the
   label is read out, not displayed), and failure messages get a soft tint
   (`--warn-tint`). Post and Sign in use 1.2rem side padding. The `pencil` icon serves both new status
@@ -607,6 +616,36 @@ reloaded) the Post button reads "Posting…", keeps its width, is marked
 `aria-busy` and ignores further clicks; the text box is read-only until the
 insert finishes.
 
+Your own statuses (the "…" menu): a status whose `@username` is the signed-in user's has a "…" button
+in the top right corner of its row (`.status-menu`, on the feed, profile and status pages). Nobody
+else sees it, and a signed-out visitor sees none (the database allows the same and nothing more: only
+your own rows can be updated or deleted). `syncStatusMenus()` adds and removes the menus; it runs after
+rows are drawn and whenever the signed-in state or the profile loads, so signing in or out changes the
+rows already on the page, and the owner is decided by comparing the row's `data-username` with the
+signed-in profile (no author ids are sent to the page). The button is a real `<button>` with
+`aria-haspopup="menu"`, `aria-expanded` and `aria-controls`; the list is `role="menu"` with
+`role="menuitem"` buttons. Opening it (click, tap, Enter, Space or ArrowDown/ArrowUp) focuses the first
+item; Escape closes it and returns focus to the button; Tab, a click or tap outside, or opening another
+menu closes it; ArrowUp/Down/Home/End move between items. One set of document-level listeners serves
+every menu. The visible button is about 34px with an invisible `::after` layer that makes the tappable
+area 44px or more (like the other small buttons), the items are at least 44px tall, and the header
+makes room (`.status.has-menu .status-meta` padding) so a long name never runs under the button. The
+list is absolutely positioned and `.feed-panel` no longer has `overflow: hidden`, so a menu on the last
+row opens past the panel's bottom edge instead of being cut off (the heading band rounds its own top
+corners instead). Hover styles are inside `@media (hover: hover)`. Delete asks first: an inline question
+under the status text ("Delete this status? This can't be undone." with Delete and Cancel,
+`.status-confirm`, role `group`), with the focus on Cancel so a stray Enter deletes nothing; Escape or
+Cancel closes it and returns focus to the "…" button. While deleting, the button reads "Deleting…"
+(`aria-busy`) and both buttons are disabled. On success the row is removed, "Status deleted." is
+announced (`#status-announcer`, a visually hidden live region next to `#route-announcer`) and focus
+goes to the next row's name (or the previous one's, or the page). A feed that loses its last row
+reloads (the next page of statuses, or the empty message); a profile's "N statuses" count goes down by
+one (both through a `statusdeleted` event on the feed); on a status's own page deleting it goes home.
+A failure keeps the status and the question and shows "Couldn't delete this status. Try again." in a
+tinted note under the buttons; a gone login signs you out locally and the sign-in form says "Your
+session expired. Sign in again to delete your status." Hat tips on a deleted status go with it
+(database cascade). Editing is the next item in this menu (planned).
+
 Hat tips (Status Rodeo's "like"): every status has a "Tip" pill under its
 text (`.status-actions`: the `.hat-tip` button, a `.hat-number` and a `.hat-note`
 message line; `.hat-note` is a `div`, not a `p`, because `.status p` is the status
@@ -709,4 +748,5 @@ Target:
 
 A mockup is a visual reference, not a feature list. These controls appear in it
 but are not built, and are not to be added without asking: Settings, a "Post a
-status" nav link, a users list, per-status menus.
+status" nav link, a users list. (The per-status "…" menu was asked for and built on 2026-10-12, for
+the owner's own statuses only; see "Your own statuses".)
