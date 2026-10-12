@@ -224,6 +224,17 @@ and nothing applies it automatically. This section and that file were checked
 against the live database on 2026-10-06. The live database is authoritative: if
 either disagrees with it, trust the database and fix them.
 
+`supabase/live-state-check.sql` is the read-only "docs vs live database" check (22 rows, one SELECT,
+changes nothing, no rollback needed): tables and columns, keys and foreign keys, the two CHECKs, RLS,
+the exact policies and their conditions, table and column privileges of `anon` and `authenticated`,
+the triggers (including that none on `auth.users` creates profiles), the two functions, storage
+buckets and a few data sanity rows. Every row must say `ok = true`; `detail` shows what it found.
+It passes on a database built from `schema.sql` and fails when any one of a dozen objects is changed
+(tested on local Postgres 16 on 2026-10-12). Run it in the Supabase SQL editor after any change made
+by hand in the dashboard, and fix the docs or the database for any false row. It has not been run
+against production yet (as of 2026-10-12); when it has, update the date above. Its header lists what
+SQL cannot see (auth settings, GraphQL, project pausing), which are checked by hand in the dashboard.
+
 Tables:
 - `statuses`: `id` int8 identity primary key, `user_id` uuid not null, `content`
   text not null (1 to 280 characters, see below), `visibility` text not null default `'public'`, `created_at`
