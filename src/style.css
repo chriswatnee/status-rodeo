@@ -1839,6 +1839,57 @@ textarea:focus-visible {
 }
 
 /*
+  Phone tap targets: every small link or control gets at least 44px of tappable height (the
+  WCAG 2.2 AAA / Apple guideline) without any visible change. Two techniques, because each fits
+  different elements:
+    - a transparent `::after` layer on the nav links and Sign out (the same trick as the hat tip
+      and the "…" button), which only extends into empty space around them;
+    - padding with an equal negative margin on links and fields that have no background (the
+      sort dropdown, the name and time in a feed row, the "Back to my profile" and "Try again"
+      links): the box keeps its layout size, the padding is tappable. Anything that comes later
+      in the page (the status text and its links, the next row) is painted above it and wins a
+      tap where they overlap, so a link inside a status is never covered.
+  Don't use a positioned `::after` on the name and time: it would paint above the status text.
+*/
+@media (max-width: 639px) {
+  .site-nav a,
+  #sign-out-button {
+    position: relative;
+  }
+
+  .site-nav a::after,
+  #sign-out-button::after {
+    content: '';
+    position: absolute;
+    inset: -0.45rem -0.2rem;
+  }
+
+  .sort-select {
+    padding-block: 0.75rem;
+    margin-block: -0.45rem;
+  }
+
+  /* More above than below: the status text starts right under the header, so the room is above. */
+  .status-name,
+  .status-time {
+    padding-block: 0.9rem 0.3rem;
+    margin-block: -0.9rem -0.3rem;
+  }
+
+  .edit-back-link {
+    display: inline-block;
+    padding-block: 0.75rem;
+    margin-block: -0.75rem;
+  }
+
+  .profile-error button,
+  .feed-message button {
+    padding-block: 0.75rem;
+    margin-block: -0.75rem;
+  }
+}
+
+/*
   Very small phones (320 to 360px): the composer placeholder and the feed
   heading's sort dropdown no longer fit at normal size, so tighten the
   composer's padding and a few font sizes.
