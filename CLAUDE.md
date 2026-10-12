@@ -756,6 +756,8 @@ result with the module's current session rather than calling `getSession()`
 again, which could answer "no session" for a moment and silently drop the
 identity. Signing out stops the retries.
 
+Nothing jumps while loading: `<html>` starts with `class="fonts-pending"` (in `index.html`), which hides `#app` (page colour shows) until `revealWhenFontsReady()` (`src/main.js`) sees Zilla Slab and Nunito loaded, or after 2.5 s, and then `#app` fades in (0.25s). Both fonts are `font-display: block` and preloaded, so text is never drawn in a fallback font and swapped. Avatars (`.avatar img`, added only once loaded) fade in over their placeholder, as do the Edit profile picker icons (`.fade-img` / `.is-loaded`); all fades are off under reduced motion. Use the same pattern for any new image: a fixed-size box in a placeholder colour, then a fade.
+
 Loading states: the masthead reserves its space (about 5.3:1, 3.1:1 on phones) in the page colour with no shadow and the title hidden, so nothing dark flashes; the picture and title then fade together (0.25s, off under reduced motion) when the image loads (`data-loaded` on `.masthead`, set by `watchMasthead()` in `src/main.js`). If the picture hasn't loaded after 8 s the masthead turns dark wood with the title showing (`data-loaded="failed"`), so it is never blank. A late retry that succeeds then shows the picture on top. Avatars
 (`data-state` loading, loaded or fallback) and the feed (three placeholder rows,
 `aria-busy`) show pulsing placeholders until their data arrives, and the
