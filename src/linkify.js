@@ -13,8 +13,16 @@
 //     address opened one (Wikipedia-style .../Foo_(bar));
 //   * an address with a username or password in it (https://paypal.com@evil.com), or a
 //     host without a dot, is left as plain text.
+//
+// @mentions: outside web addresses, "@name" is returned as a 'mention' part. This file
+// only finds them; the page decides whether the user exists (see resolveMentions in
+// src/main.js). A mention is "@" plus 1 to 50 of A-Z a-z 0-9 _ . - (the username rule),
+// not starting inside a word, an email address, a path or another mention, and trailing
+// "." and "-" are left out so "Hi @chris." mentions chris. Case is kept as typed.
 
 const ADDRESS = /https?:\/\/[^\s<>"]+/gi;
+const MENTION = /@[A-Za-z0-9_.-]+/g;
+const MENTION_BEFORE = /[A-Za-z0-9_.@/-]/;
 const SENTENCE_END = new Set(['.', ',', ';', ':', '!', '?', "'", '…']);
 const OPENING = { ')': '(', ']': '[', '}': '{' };
 
@@ -60,8 +68,8 @@ function safeHref(text) {
   return url.href;
 }
 
-// [{ type: 'text', text }, { type: 'link', text, href }, ...]. The texts joined
-// together are always exactly the input.
+// [{ type: 'text', text }, { type: 'link', text, href }, { type: 'mention', text, username },
+// ...]. The texts joined together are always exactly the input.
 export function linkify(content) {
   const text = String(content ?? '');
   const parts = [];
@@ -76,6 +84,26 @@ export function linkify(content) {
     }
   }
 
+  // Plain text between addresses, with any @mentions in it split out. `from` and `to` are
+  // positions in the whole text, so the character before a mention is always the real one.
+  function pushText(from, to) {
+    let position = from;
+
+    for (const match of text.slice(from, to).matchAll(MENTION)) {
+      const start = from + match.index;
+      const name = match[0].slice(1).replace(/[.-]+$/, '');
+
+      if (name === '' || name.length > 50) continue;
+      if (start > 0 && MENTION_BEFORE.test(text[start - 1])) continue;
+
+      push({ type: 'text', text: text.slice(position, start) });
+      push({ type: 'mention', text: `@${name}`, username: name });
+      position = start + 1 + name.length;
+    }
+
+    push({ type: 'text', text: text.slice(position, to) });
+  }
+
   let position = 0;
 
   for (const match of text.matchAll(ADDRESS)) {
@@ -84,12 +112,12 @@ export function linkify(content) {
 
     if (href === null) continue;
 
-    push({ type: 'text', text: text.slice(position, match.index) });
+    pushText(position, match.index);
     push({ type: 'link', text: address, href });
     position = match.index + address.length;
   }
 
-  push({ type: 'text', text: text.slice(position) });
+  pushText(position, text.length);
 
   return parts.length ? parts : [{ type: 'text', text }];
 }

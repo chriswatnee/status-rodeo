@@ -127,3 +127,42 @@ test('a long status with many addresses stays fast', () => {
   // no pathological backtracking on a long unbroken run of punctuation
   assert.doesNotThrow(() => linkify('https://example.com/' + '.'.repeat(5000) + ')'.repeat(5000)));
 });
+
+const mentions = (text) => linkify(text).filter((part) => part.type === 'mention').map((part) => part.username);
+
+test('finds @mentions in plain text', () => {
+  assert.deepEqual(linkify('Hi @chris, hello'), [
+    { type: 'text', text: 'Hi ' },
+    { type: 'mention', text: '@chris', username: 'chris' },
+    { type: 'text', text: ', hello' },
+  ]);
+  assert.deepEqual(mentions('@a and @b_c.d-e'), ['a', 'b_c.d-e']);
+  assert.deepEqual(mentions('(@sofie)'), ['sofie']);
+  assert.deepEqual(mentions('line\n@chris'), ['chris']);
+});
+
+test('a mention keeps its case and drops trailing . and -', () => {
+  assert.deepEqual(mentions('Hi @Chris.'), ['Chris']);
+  assert.deepEqual(mentions('thanks @sofie-- really'), ['sofie']);
+  assert.deepEqual(mentions('@sofie...'), ['sofie']);
+});
+
+test('things that are not mentions stay text', () => {
+  for (const text of ['mail me at a@b.com', 'foo@bar', '@', '@@chris', 'x@@chris', '@ chris', '@.', 'a/@chris', 'a_@chris', '@' + 'a'.repeat(51)]) {
+    assert.deepEqual(mentions(text), [], text);
+  }
+  assert.deepEqual(mentions('@' + 'a'.repeat(50)), ['a'.repeat(50)]);
+});
+
+test('an @ inside a web address is not a mention, one beside it is', () => {
+  assert.deepEqual(mentions('https://example.com/@chris'), []);
+  assert.deepEqual(mentions('https://paypal.com@evil.com'), []);
+  assert.deepEqual(mentions('@chris see https://example.com/x @sofie'), ['chris', 'sofie']);
+  assert.deepEqual(links('@chris see https://example.com/x'), ['https://example.com/x']);
+});
+
+test('parts still add up to the text with mentions', () => {
+  for (const text of ['Hi @chris.', '@a @b', 'a@b.com @c', 'https://a.com/x @y!', '😀@chris😀', '@']) {
+    assert.equal(joined(text), text, text);
+  }
+});
