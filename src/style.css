@@ -159,7 +159,6 @@ select {
 }
 
 a:focus-visible,
-summary:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -315,7 +314,7 @@ textarea:focus-visible {
 .sidebar,
 .composer,
 .profile,
-.avatar-picker,
+.profile-edit,
 .notice,
 .feed-panel {
   border: 1px solid var(--border);
@@ -754,50 +753,61 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-/* Change avatar: shown only on your own profile. A closed panel is one slim row; open, it shows
-   the twelve icons as buttons. Sizes use the shared spacing variables. */
-.avatar-picker {
-  margin-bottom: var(--gap);
-}
-
-.avatar-picker summary {
+/* "Edit profile": a slim row of its own under your profile card (shown only to you), so the
+   card keeps its room for "@name · Joined … · 14 statuses". */
+.profile-edit {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
+  margin-bottom: var(--gap);
   padding: 0.35rem var(--inset);
   color: var(--link);
   font-weight: 700;
-  list-style: none;
-  cursor: pointer;
+  text-decoration: none;
   touch-action: manipulation;
 }
 
-.avatar-picker summary::-webkit-details-marker {
-  display: none;
+.profile-edit .icon {
+  color: inherit;
 }
 
-/* A small chevron says the row opens. */
-.avatar-picker summary::after {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  margin: 0 0.15rem 0.2rem auto;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
+/* The Edit profile page: your avatar and the twelve icons as buttons. Sizes use the shared
+   spacing variables. */
+.edit-form {
+  padding: var(--inset-y) var(--inset) calc(var(--inset-y) + 0.25rem);
 }
 
-.avatar-picker[open] summary::after {
-  margin-bottom: -0.2rem;
-  transform: rotate(225deg);
+.edit-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
 }
 
-.avatar-picker-body {
-  padding: 0 var(--inset) var(--inset-y);
+.edit-identity > div {
+  display: grid;
+  min-width: 0;
 }
 
-.avatar-picker-body > p {
+.edit-name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1.2;
+  color: var(--heading);
+}
+
+.edit-username {
+  color: var(--muted);
+}
+
+.edit-form h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.1rem;
+  color: var(--heading);
+}
+
+.edit-help {
   margin: 0 0 0.8rem;
   color: var(--muted);
 }
@@ -846,23 +856,28 @@ textarea:focus-visible {
   background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff3dc' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 80% no-repeat;
 }
 
-.avatar-picker[aria-busy='true'] .avatar-choice {
+.edit-form[aria-busy='true'] .avatar-choice {
   cursor: progress;
 }
 
-.avatar-picker-note {
+.edit-note {
   margin: 0.8rem 0 0;
+  color: var(--muted);
 }
 
-.avatar-picker-note:empty {
+.edit-note:empty {
   display: none;
 }
 
-.avatar-picker-note:has(.icon-error) {
+.edit-note:has(.icon-error) {
   padding: 0.6rem 0.75rem;
   border-radius: var(--radius-small);
   background: var(--warn-tint);
   color: var(--text);
+}
+
+.edit-back {
+  margin: 1.2rem 0 0;
 }
 
 /* Wide enough, the twelve make two rows of six; narrower, as many as fit. */
@@ -874,7 +889,7 @@ textarea:focus-visible {
 }
 
 @media (hover: hover) {
-  .avatar-picker summary:hover {
+  .profile-edit:hover {
     text-decoration: underline;
   }
 
