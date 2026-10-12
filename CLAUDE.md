@@ -25,7 +25,7 @@ with two users.
   the endpoints return 500. `.dev.vars` is gitignored.
 
 - `npm test` : unit tests (Node's built-in runner, no dependencies) for the status
-  length rule, the posting logic, the avatar icons and the avatar save, the status delete, the hat tips logic, the status id
+  length rule, the posting logic, the avatar icons and the avatar save, the status delete and edit, the hat tips logic, the status id
   parser, link detection, the profile page's feed autodiscovery, the status link previews, the composer placeholders and the RSS feeds in `tests/`.
 
 There are no linters. Before finishing a change, run `npm test` and
@@ -109,6 +109,13 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
   positive whole number, nothing sent), `session-expired` or `failed`; never throws. The "…" menu that
   uses it is `createStatusMenu()` / `showDeleteConfirm()` in `src/main.js`; see "Your own statuses"
   under Design direction.
+- `src/update-status.js` edits the content of one of the signed-in user's own statuses (no DOM, unit
+  tested): `updateStatus()` validates the trimmed text with `validateStatus()` (same 1 to 280 rule as
+  posting), runs `update({ content }).eq('id', id).select('id, content, edited_at')` and counts the rows
+  that come back (a refused update is not an error to PostgREST). Zero rows is followed by one read: the
+  status is gone means `gone`, still there means refused (`failed`). Results are ok (with the saved
+  `content` and `editedAt`), `empty`, `too-long`, `invalid`, `gone`, `session-expired` or `failed`; never
+  throws. The editor is `startEdit()` in `src/main.js`; see "Your own statuses" under Design direction.
 - `src/status-limit.js` is the 280-character rule (counts Unicode code points, so
   it matches Postgres `char_length`); `src/post-status.js` validates and inserts a
   status. Both are plain modules with unit tests.
@@ -282,7 +289,7 @@ Muse) on 2026-10-12 and checked with `supabase/status-edit-delete-verify.sql`: 2
 constraint's name, since replaced by a check on what the constraint enforces; the results were not
 pasted into the session). Re-run on 2026-10-12 after the fix: 24 of 24 `ok = true` (as reported to Chris).
 Re-run it after any change to these objects; it rolls back everything it does. Code may now select
-`statuses.edited_at`; the delete UI uses the delete policy.
+`statuses.edited_at`; the delete UI uses the delete policy and the edit UI the update policy.
 
 Row Level Security is enabled on `profiles`, `statuses` and `hat_tips`. Policies on
 `profiles` and `statuses`:
@@ -644,7 +651,28 @@ one (both through a `statusdeleted` event on the feed); on a status's own page d
 A failure keeps the status and the question and shows "Couldn't delete this status. Try again." in a
 tinted note under the buttons; a gone login signs you out locally and the sign-in form says "Your
 session expired. Sign in again to delete your status." Hat tips on a deleted status go with it
-(database cascade). Editing is the next item in this menu (planned).
+(database cascade).
+
+Editing (the first item in the menu, with the `pencil` icon; Delete is second): Edit replaces the
+status text with an inline editor (`startEdit()`, `form.status-edit`) in the same rounded box as the
+composer: a textarea holding the saved text with the caret at the end and the focus in it, the live
+`n/280` counter (rust and bold at 20 or fewer left, as in the composer), Save and Cancel (44px tall;
+they and the counter wrap under each other when the box is narrow on a phone). Typing and pasting stop
+at 280 Unicode code points through `limitTyping()`, shared with the composer. Save is disabled until the
+trimmed text is valid and different from the saved text. Ctrl+Enter (Cmd+Enter) saves, plain Enter is a
+new line, and Escape or Cancel closes the editor without asking (an unsaved edit is only a few
+characters) and returns focus to the "…" button. While the editor is open the "…" menu is hidden and a
+delete question is closed. While saving, the button reads "Saving…" (same width, `aria-busy`), the
+text is read-only and Cancel is disabled. On success the row shows the saved text (links and mentions
+rebuilt, mentions resolved again), an "edited" label appears, the editor closes, focus returns to the
+"…" button and "Status saved." is announced. A failure keeps the editor and the text with "Couldn't
+save your edit. Try again."; a status deleted elsewhere says "This status no longer exists."; a gone
+login signs you out locally and the sign-in form says "Your session expired. Sign in again to save
+your edit." (the unsaved text is lost, because the editor only exists for the signed-in owner). There
+is no time limit on editing. The "edited" label (`span.status-edited`, shown after the time as "· edited",
+the exact edit time in its tooltip) comes from `statuses.edited_at`, which a database trigger sets only
+when the content really changes; every query that draws a status row selects `edited_at`. The RSS feeds,
+link previews and the API are unchanged by edits (a feed item shows the current text).
 
 Hat tips (Status Rodeo's "like"): every status has a "Tip" pill under its
 text (`.status-actions`: the `.hat-tip` button, a `.hat-number` and a `.hat-note`
