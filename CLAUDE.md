@@ -84,7 +84,8 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 - `src/linkify.js` finds web addresses in a status (plain text in, parts out, never HTML; unit
   tested). Only `http://` and `https://` addresses count; sentence punctuation at the end is
   not part of the link and a closing bracket is only kept if the address opened one; an
-  address with a username or password, or a host without a dot, stays plain text. The
+  address with a username or password, or a host without a dot, stays plain text. It also
+  returns `@name` as a `mention` part (see "Mentions" under Design direction). The
   page builds the nodes in `fillStatusText()` (`src/main.js`, used by `createStatusRow()`).
 - `src/placeholders.js` is the list of Western-flavoured placeholder lines for the composer and
   `pickPlaceholder()`, which chooses one at random and never the same as the last one (unit
@@ -565,6 +566,19 @@ in a new tab)" (the visible text, and so copy and paste, is unchanged); a link t
 has no target and is followed inside the app. A status with no address is still one plain
 text node. Bare domains ("example.com", "www.…") are deliberately not linked: only
 addresses that start with `http://` or `https://`. RSS descriptions stay plain text.
+
+Mentions: `@username` in a status links to `/users/<username>` on every page that shows
+statuses (`a.status-link.status-mention`, normal link colour and underline, followed inside the app).
+It is display only: the stored text, the RSS feeds and link previews are unchanged, and nobody is
+notified (no table, no SQL). `linkify()` finds them: `@` plus 1 to 50 of `A-Z a-z 0-9 _ . -`, not
+directly after a letter, digit, `_ . - / @` (so emails, `@@x` and `https://site/@x` are not mentions),
+and trailing `.` and `-` are left out ("Hi @chris." mentions chris). The case must match exactly, like
+profile addresses. A mention is only a link if the profile exists: after a page of statuses is drawn,
+`resolveMentions()` makes one `profiles` query (`username in (...)`, at most 50 names, retried) for the
+names not checked yet; until it answers (and if it fails) the mention is plain text in a
+`span[data-mention]`, and a name that doesn't exist stays plain text. Answers are kept in
+`knownUsernames` for as long as the page is open. Mentioning yourself links too. Not built, by choice:
+autocomplete while typing, and notifications or a "mentions of me" page (would need a table and RLS).
 
 Composer: the text field and its actions are one rounded box (`.composer-fields`,
 which draws the focus ring via `:focus-within`): the text on top, then a row with

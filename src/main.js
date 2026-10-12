@@ -942,6 +942,7 @@ async function renderStatusPage(segment, isCurrent) {
       })
     );
     loadHatTips([status.id]);
+    resolveMentions();
   }
 
   await load();
@@ -1008,6 +1009,7 @@ function createFeedPager({ feed, more, sortSelect, title, select, filter = (quer
     cursor = rows[rows.length - 1].created_at;
 
     loadHatTips(rows.map((status) => status.id));
+    resolveMentions();
   }
 
   function moreLabel() {
@@ -1490,29 +1492,100 @@ function createFeedMessage(text) {
 function fillStatusText(element, content) {
   const parts = linkify(content);
 
+  if (!parts.some((part) => part.type === 'mention')) {
+    fillParts(element, content, parts);
+    return;
+  }
+
+  // @mentions: a name already known to exist is a link at once; a known-missing one is
+  // plain text; an unchecked one is a marked span of plain text until resolveMentions()
+  // has asked the database (see below).
+  element.replaceChildren(
+    ...parts.map((part) => {
+      if (part.type === 'mention') return mentionNode(part);
+      return partNode(part);
+    })
+  );
+}
+
+function fillParts(element, content, parts) {
   if (parts.length === 1 && parts[0].type === 'text') {
     element.textContent = content;
     return;
   }
 
-  element.replaceChildren(
-    ...parts.map((part) => {
-      if (part.type === 'text') return document.createTextNode(part.text);
+  element.replaceChildren(...parts.map(partNode));
+}
 
-      const link = document.createElement('a');
-      link.className = 'status-link';
-      link.href = part.href;
-      link.textContent = part.text;
+function partNode(part) {
+  if (part.type === 'text') return document.createTextNode(part.text);
 
-      if (new URL(part.href).origin !== window.location.origin) {
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer nofollow ugc';
-        link.setAttribute('aria-label', `${part.text} (opens in a new tab)`);
-      }
+  const link = document.createElement('a');
+  link.className = 'status-link';
+  link.href = part.href;
+  link.textContent = part.text;
 
-      return link;
-    })
-  );
+  if (new URL(part.href).origin !== window.location.origin) {
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer nofollow ugc';
+    link.setAttribute('aria-label', `${part.text} (opens in a new tab)`);
+  }
+
+  return link;
+}
+
+// Which @names exist: true or false once the database has answered, absent until then.
+// Profiles are public and usernames can't be changed from the app, so the answer is kept
+// for as long as the page stays open.
+const knownUsernames = new Map();
+
+function mentionLink(username, text) {
+  const link = document.createElement('a');
+  link.className = 'status-link status-mention';
+  link.href = `/users/${username}`;
+  link.textContent = text;
+
+  return link;
+}
+
+function mentionNode(part) {
+  const known = knownUsernames.get(part.username);
+
+  if (known === true) return mentionLink(part.username, part.text);
+  if (known === false) return document.createTextNode(part.text);
+
+  const pending = document.createElement('span');
+  pending.dataset.mention = part.username;
+  pending.textContent = part.text;
+
+  return pending;
+}
+
+// One request for the @names on the page that haven't been checked. Only a name that is
+// really a profile becomes a link, so no mention leads to "Page not found". If the request
+// fails the names simply stay plain text and are tried again next time they are drawn.
+async function resolveMentions() {
+  const names = [...new Set([...document.querySelectorAll('[data-mention]')].map((el) => el.dataset.mention))].slice(0, 50);
+
+  if (names.length === 0) return;
+
+  const { data, error } = await withRetry(() => supabase.from('profiles').select('username').in('username', names));
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const found = new Set(data.map((row) => row.username));
+
+  for (const name of names) knownUsernames.set(name, found.has(name));
+
+  for (const pending of document.querySelectorAll('[data-mention]')) {
+    const known = knownUsernames.get(pending.dataset.mention);
+
+    if (known === true) pending.replaceWith(mentionLink(pending.dataset.mention, pending.textContent));
+    else if (known === false) pending.replaceWith(document.createTextNode(pending.textContent));
+  }
 }
 
 function createStatusRow({ id, username, displayName, avatar, content, createdAt }) {
