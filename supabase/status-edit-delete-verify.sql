@@ -94,11 +94,15 @@ begin
       and not has_table_privilege('anon', 'public.statuses', 'delete')
       and not has_any_column_privilege('anon', 'public.statuses', 'update'));
 
-    names := array_append(names, 'statuses_content_check still exists and is validated');
+    -- Checked by what it enforces, not by name: production's constraint is called
+    -- statuses_content_length_check, and a name written from memory once failed this check.
+    names := array_append(names, 'a validated CHECK on statuses limits content to 1-280 characters and not blank');
     oks := oks || coalesce((
-      select convalidated and contype = 'c'
+      select bool_or(convalidated and pg_get_constraintdef(oid) ~ 'char_length\(content\)'
+                     and pg_get_constraintdef(oid) ~ '280'
+                     and pg_get_constraintdef(oid) ~ '\^\\s\*\$')
       from pg_constraint
-      where conrelid = 'public.statuses'::regclass and conname = 'statuses_content_check'), false);
+      where conrelid = 'public.statuses'::regclass and contype = 'c'), false);
 
     -- ---------- test data (rolled back at the end) ----------
     select user_id into uid_a from public.profiles order by created_at, user_id limit 1;
