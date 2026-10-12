@@ -412,6 +412,9 @@ textarea:focus-visible {
 
 .sidebar-identity {
   display: grid;
+  /* One column that may shrink below its content; an auto column grows to fit a long
+     @username and pushes it out of the card. */
+  grid-template-columns: minmax(0, 1fr);
   /* Tight enough that the avatar, not the text, sets the row height, so its
      top lines up with the composer's and the profile card's avatars. */
   gap: 0;
@@ -420,12 +423,18 @@ textarea:focus-visible {
 }
 
 .sidebar-identity strong {
+  /* One line, like the @username under it: a very long name must not make this block tall. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 1.3rem;
   line-height: 1.2;
-  overflow-wrap: anywhere;
 }
 
 .sidebar-identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -748,6 +757,9 @@ textarea:focus-visible {
 }
 
 .profile p {
+  /* The positioned parent keeps the visually-hidden "Joined" (position: absolute, see the
+     very small phone block) inside this clip, so it can't widen the page. */
+  position: relative;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -809,6 +821,7 @@ textarea:focus-visible {
 
 .edit-identity > div {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
 
@@ -817,9 +830,13 @@ textarea:focus-visible {
   font-size: 1.4rem;
   line-height: 1.2;
   color: var(--heading);
+  overflow-wrap: anywhere;
 }
 
 .edit-username {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--muted);
 }
 
@@ -1512,5 +1529,27 @@ textarea:focus-visible {
 
   .sort-select {
     font-size: 0.9rem;
+  }
+
+  /* "@chris · Joined Sep 2026 · 4 statuses" is a few pixels too wide at 360px. */
+  .profile p {
+    font-size: 0.78rem;
+  }
+}
+
+/*
+  At 340px and under it is too wide even smaller, so the word "Joined" is dropped from view.
+  It stays in the page for screen readers (the same technique as .visually-hidden).
+*/
+@media (max-width: 340px) {
+  .joined-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }

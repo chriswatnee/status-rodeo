@@ -594,11 +594,28 @@ async function renderUserPage(username, isCurrent) {
     },
   });
 
-  const joined = `Joined ${new Date(profile.created_at).toLocaleDateString('en-US', {
+  // "Joined Sep 2026 · 14 statuses". The word "Joined" is its own span so that on the very
+  // smallest phones it can be dropped from view (kept for screen readers) to make the line fit.
+  const joinedDate = new Date(profile.created_at).toLocaleDateString('en-US', {
     month: 'short',
     year: 'numeric',
-  })}`;
-  profileMeta.textContent = joined;
+  });
+
+  function setMeta(statusCount) {
+    const joinedWord = document.createElement('span');
+    joinedWord.className = 'joined-word';
+    joinedWord.textContent = 'Joined ';
+
+    const parts = [joinedWord, joinedDate];
+
+    if (statusCount !== null) {
+      parts.push(` · ${statusCount} ${statusCount === 1 ? 'status' : 'statuses'}`);
+    }
+
+    profileMeta.replaceChildren(...parts);
+  }
+
+  setMeta(null);
   profileMeta.hidden = false;
 
   const pager = createFeedPager({
@@ -630,7 +647,7 @@ async function renderUserPage(username, isCurrent) {
   if (countError) {
     console.error(countError);
   } else if (count !== null) {
-    profileMeta.textContent = `${joined} · ${count} ${count === 1 ? 'status' : 'statuses'}`;
+    setMeta(count);
   }
 }
 
