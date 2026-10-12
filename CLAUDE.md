@@ -220,7 +220,7 @@ fallback, a missing or non-public status still answers HTTP 200 (the app draws i
 Supabase was set up partly by hand in the dashboard. `supabase/schema.sql` is a
 snapshot of the tables, foreign keys, RLS, and policies. It is not a migration,
 and nothing applies it automatically. This section and that file were checked
-against the live database on 2026-10-06. The live database is authoritative: if
+against the live database on 2026-10-06, and again in full by the check script on 2026-10-12 (see below). The live database is authoritative: if
 either disagrees with it, trust the database and fix them.
 
 `supabase/live-state-check.sql` is the read-only "docs vs live database" check (22 rows, one SELECT,
@@ -235,8 +235,8 @@ production on 2026-10-12 (by Sofie): 19 of 22 rows were `ok = true`, and the pol
 The three differences were docs errors, not database problems: `created_at` is NOT NULL on `statuses`
 and `profiles` (the docs said nullable), and `public` also holds Supabase's own `rls_auto_enable()`
 (SECURITY DEFINER, `search_path` pg_catalog, executable by `anon` and `authenticated`), which the
-function check now ignores. Docs, `schema.sql` and the script were corrected to match; the corrected
-script has not been re-run on production yet. Its header lists what
+function check now ignores. Docs, `schema.sql` and the script were corrected to match, and the corrected
+script was re-run on production the same day (by Muse): 22 of 22 rows `ok = true`, summary 0 failing. Its header lists what
 SQL cannot see (auth settings, GraphQL, project pausing), which are checked by hand in the dashboard.
 
 Tables:
