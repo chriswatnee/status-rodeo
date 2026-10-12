@@ -633,7 +633,7 @@ signed-in profile (no author ids are sent to the page). The button is a real `<b
 `aria-haspopup="menu"`, `aria-expanded` and `aria-controls`; the list is `role="menu"` with
 `role="menuitem"` buttons. Opening it (click, tap, Enter, Space or ArrowDown/ArrowUp) focuses the first
 item; Escape closes it and returns focus to the button; Tab, a click or tap outside, or opening another
-menu closes it; ArrowUp/Down/Home/End move between items. One set of document-level listeners serves
+menu closes it; ArrowUp/Down/Home/End move between items. (Focus leaving the menu closes it only when no pointer was pressed in the last 800 ms: iOS Safari focuses the page container, `#page`, between a tap and its click, and closing the menu on that made taps on Edit and Delete land on the feed. Found 2026-10-12 with an on-screen event log on a preview; Chromium does not do this, so the unit and browser tests could not catch it. A pointer outside still closes the menu through `pointerdown`.) One set of document-level listeners serves
 every menu. The visible button is about 34px with an invisible `::after` layer that makes the tappable
 area 44px or more (like the other small buttons), the items are at least 44px tall, and the header
 makes room (`.status.has-menu .status-meta` padding) so a long name never runs under the button. The

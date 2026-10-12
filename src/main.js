@@ -1977,8 +1977,24 @@ document.addEventListener('pointerdown', (event) => {
   }
 });
 
-// Moving focus out of an open menu (Tab, or a click elsewhere) closes it.
+// Moving focus out of an open menu (Tab, a screen reader moving away) closes it. Not while a
+// tap or click is under way: iOS Safari answers a tap on a button by focusing the nearest
+// focusable ancestor (the page container) between the touch and the click, and closing the menu
+// then made the tap land on the feed instead of the menu item (Edit and Delete did nothing).
+// A pointer outside the menu closes it through the pointerdown listener above.
+let lastPointerDown = -Infinity;
+
+document.addEventListener(
+  'pointerdown',
+  () => {
+    lastPointerDown = performance.now();
+  },
+  true
+);
+
 document.addEventListener('focusin', (event) => {
+  if (performance.now() - lastPointerDown < 800) return;
+
   for (const wrap of document.querySelectorAll('.status-menu')) {
     if (!wrap.contains(event.target)) closeStatusMenu(wrap);
   }
