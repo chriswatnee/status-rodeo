@@ -575,6 +575,24 @@ async function renderUserPage(username, isCurrent) {
           </section>
   `, { linkHome: true });
 
+  // Until this profile has loaded, hold the "Edit profile" button's place (invisibly) when the
+  // signed-in visitor's own username matches this page, so on phones the feed below doesn't jump
+  // down by the button's line when it appears. The page is not revealed until the signed-in
+  // profile is known, so this is settled before anyone sees it; the final decision is made below,
+  // once this profile has loaded.
+  const earlyEditLink = document.querySelector('#profile-edit');
+  const mightBeOwner = (session, me) => !!session && me?.username === username;
+
+  setPageHooks({
+    onSession(session) {
+      earlyEditLink.hidden = !mightBeOwner(session, currentProfile);
+      earlyEditLink.dataset.pending = 'true';
+    },
+    onProfile(me) {
+      earlyEditLink.hidden = !mightBeOwner(currentSession, me);
+    },
+  });
+
   const profileAvatar = document.querySelector('#profile-avatar');
   const profileName = document.querySelector('#profile-name');
   const profileUsername = document.querySelector('#profile-username');
@@ -609,6 +627,7 @@ async function renderUserPage(username, isCurrent) {
   setPageHooks({
     onSession(session) {
       editLink.hidden = session?.user.id !== profile.user_id;
+      delete editLink.dataset.pending;
     },
   });
 
@@ -1269,7 +1288,10 @@ function initSidebar() {
     // while the request was running.
     if (signedOutMeanwhile()) return;
 
+    // Signed in: the page can be shown once we also know who they are (see
+    // revealWhenFontsReady()), even if the profile failed to load.
     if (error) {
+      markAuthKnown();
       console.error(error);
       currentProfile = null;
       sidebarProfile.hidden = true;
@@ -1294,11 +1316,11 @@ function initSidebar() {
     updateNav();
     syncStatusMenus();
     pageHooks.onProfile?.(profile);
+    markAuthKnown();
   }
 
   function updateAuthUI(session) {
     authKnown = true;
-    markAuthKnown();
     currentSession = session;
     if (!session) currentProfile = undefined;
 
@@ -1333,6 +1355,7 @@ function initSidebar() {
       profileLink.hidden = true;
       delete profileLink.dataset.pending;
       updateNav();
+      markAuthKnown();
 
       sidebarDisplayName.textContent = '';
       sidebarUsername.textContent = '';
@@ -2527,7 +2550,7 @@ function setMastheadLink(linkHome) {
   }
 }
 
-// The app stays hidden (in the page colour) until the two fonts are ready and the signed-in state is known, then fades in,
+// The app stays hidden (in the page colour) until the two fonts are ready and the signed-in state is known (signed out, or signed in with the profile loaded), then fades in,
 // so text never shows in a fallback font and jumps. `fonts-pending` is set on <html> in
 // index.html. Gives up after 2.5 s (the fonts are preloaded, so this is rare) and shows the
 // page anyway; with `font-display: block` it then re-draws when the fonts arrive.
