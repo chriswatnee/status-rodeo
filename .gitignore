@@ -26,3 +26,6 @@ dist-ssr
 # Cloudflare Wrangler
 .wrangler/
 .dev.vars
+
+# Claude Code: personal settings stay local; .claude/launch.json is shared
+.claude/settings.local.json
