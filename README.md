@@ -104,3 +104,7 @@ The environment variables are set in the Cloudflare dashboard. There is
 deliberately no `wrangler.jsonc`: for a Pages project, a Wrangler config file
 becomes the source of truth and the dashboard turns read-only for the settings
 it covers, including these variables.
+
+## License
+
+[MIT](LICENSE) © 2026 Chris Watnee
