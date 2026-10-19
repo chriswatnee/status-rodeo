@@ -793,7 +793,12 @@ textarea:focus-visible {
   background: transparent;
   color: var(--text);
   font-size: 1.05rem;
-  resize: vertical;
+  /* No drag handle (it sat in the corner right above the Post button). The box grows with the
+     text instead, up to max-height, then scrolls; browsers without field-sizing keep the fixed
+     box, which scrolls. */
+  field-sizing: content;
+  max-height: 12rem;
+  resize: none;
 }
 
 /* The box draws the ring, not the field inside it. */
@@ -1682,7 +1687,7 @@ textarea:focus-visible {
   color: var(--text);
   font-size: 1.05rem;
   field-sizing: content;
-  resize: vertical;
+  resize: none;
 }
 
 /* The box draws the ring, not the field inside it. */
