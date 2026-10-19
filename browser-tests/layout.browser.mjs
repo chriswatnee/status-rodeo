@@ -5,7 +5,7 @@ import { chrisStatusId } from './support/data.js';
 
 after(closeBrowser);
 
-const widths = [320, 360, 390, 430];
+const widths = [320, 360, 390, 430, 768, 1024, 1280, 1440, 1920];
 const pages = [
   ['home', '/'],
   ['own profile', '/users/chris'],

@@ -34,7 +34,7 @@ with two users.
   `data.js`, with stress cases), so they need no network, database or Vite. Playwright is not a project
   dependency (it would bloat `npm ci` on Cloudflare): install it once with
   `npm install --no-save playwright && npx playwright install chromium`, or set `CHROMIUM_PATH` to an
-  existing Chromium. They cover: no sideways scrolling at 320/360/390/430px on every page, signed in and
+  existing Chromium. They cover: no sideways scrolling at 320 to 1920px (phones, tablets, laptops) on every page, signed in and
   out; nothing moving after the reveal (slow queries); the loading star, the 6 s reload message and the
   masthead's page-colour start and 8 s failed state; and that taps at the edge of the hat tip, "…" button
   and a status link hit the control. They cannot catch iPhone-only behaviour (the focus quirk, swallowed
@@ -844,7 +844,7 @@ Target:
   out, profile own and other, Edit profile signed in and out, a status page, not-found), with stress
   data (a 136-character unbroken word, a long URL, a 43-character display name and a 34-character
   username): no sideways scrolling anywhere, and long text wraps or is cut with an ellipsis instead
-  of overlapping. Tap targets on phones (changed 2026-10-12, no visible change): the sidebar's Home /
+  of overlapping. The "Show older" button's invisible `::after` is clipped by `.feed-more { overflow-x: clip }`: unclipped, it stuck out 3% of the (wide) button past the panel and made laptop-width pages scroll sideways (found 2026-10-19; phones hid it because their page margin is wider than 3% of the button). Tap targets on phones (changed 2026-10-12, no visible change): the sidebar's Home /
   My profile / Sign out have a transparent `::after` layer (`inset: -0.45rem -0.2rem`) and are about
   46px tall to tap; the sort dropdown, the "Back to my profile" link and the "Try again" buttons use
   padding with an equal negative margin (layout unchanged, the padding is tappable) for 44px or more;
