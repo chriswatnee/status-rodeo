@@ -1158,6 +1158,10 @@ textarea:focus-visible {
 
 .feed-more {
   border-top: 1px solid var(--divider);
+  /* The button's invisible ::after (inset: -3%) is 3% of the button's width wider on each side,
+     which on a laptop is past the viewport edge and made the page scroll sideways. Clip it to this
+     box; `clip` (unlike `hidden`) leaves the vertical overflow visible. */
+  overflow-x: clip;
 }
 
 .feed-more button {
