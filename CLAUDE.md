@@ -28,6 +28,18 @@ with two users.
   length rule, the posting logic, the avatar icons and the avatar save, the status delete and edit, the hat tips logic, the status id
   parser, link detection, the profile page's feed autodiscovery and link previews, the status link previews, the default preview tags in `index.html`, the composer placeholders and the RSS feeds in `tests/`.
 
+- `npm run test:browser` : browser tests in `browser-tests/` (`*.browser.mjs`, run by Node's test runner, not
+  picked up by `npm test`). They open the real `index.html`, `src/`, CSS, fonts and pictures in headless
+  Chromium with `src/supabase.js` swapped for a fake (`browser-tests/support/mock-supabase.js`, data in
+  `data.js`, with stress cases), so they need no network, database or Vite. Playwright is not a project
+  dependency (it would bloat `npm ci` on Cloudflare): install it once with
+  `npm install --no-save playwright && npx playwright install chromium`, or set `CHROMIUM_PATH` to an
+  existing Chromium. They cover: no sideways scrolling at 320/360/390/430px on every page, signed in and
+  out; nothing moving after the reveal (slow queries); the loading star, the 6 s reload message and the
+  masthead's page-colour start and 8 s failed state; and that taps at the edge of the hat tip, "…" button
+  and a status link hit the control. They cannot catch iPhone-only behaviour (the focus quirk, swallowed
+  taps) or anything Cloudflare-only. Run them after changing layout, loading or the sidebar.
+
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
 

@@ -54,6 +54,7 @@ and open http://localhost:5173.
 Other scripts:
 
 - `npm test` runs the unit tests (Node's built-in test runner, no dependencies).
+- `npm run test:browser` runs the browser tests (layout, loading, tap targets) in headless Chromium against a fake database. They need Playwright once: `npm install --no-save playwright && npx playwright install chromium`.
 - `npm run build` builds the site into `dist/`.
 - `npm run preview` serves the built `dist/` locally.
 
