@@ -31,6 +31,37 @@ with two users.
 There are no linters. Before finishing a change, run `npm test` and
 `npm run build`, and check the affected pages in the browser.
 
+Node 22 or newer (`.nvmrc`; Vite 8 needs 22.12+). Cloudflare Pages reads `.nvmrc` too, so changing it
+changes the production build's Node version. `.claude/launch.json` has two entries for the Claude Code
+desktop preview: `dev` (port 5173) and `preview` (port 4173, run `npm run build` first). Neither runs the
+`functions/` endpoints. `.gitattributes` keeps line endings as LF.
+
+There is deliberately no `wrangler.jsonc`: for a Cloudflare Pages project a Wrangler config file becomes
+the source of truth and the dashboard turns read-only for what it covers, including the two `VITE_`
+environment variables. Don't add one without moving those settings into it on purpose.
+
+## Workflow
+
+- Work on a branch and open a small, single-purpose pull request. Don't push to `main`, and don't merge
+  a pull request until the owner says so ("Merge"). Merge with a rebase merge, then update `main`, delete
+  the local branch and run `git fetch --prune`.
+- Every pull request gets a Cloudflare Pages preview. Cloudflare-only behaviour (the functions,
+  `HTMLRewriter`, headers) can only be checked on a preview or with `wrangler pages dev`, so say in the
+  pull request what was and wasn't checked.
+- Database changes are SQL scripts in `supabase/`, each with a `*-verify.sql` that changes nothing
+  permanently. Nothing applies them: the owner has a helper (Muse) run them in the Supabase SQL editor and
+  report back. Don't assume a script is applied until that is reported, and record the date and result in
+  "Data and security" when it is. The live database is authoritative over this file and `schema.sql`.
+- Keep this file current in the same pull request as the change it describes: it is how the next session
+  (and the next person) learns why things are the way they are.
+- Temporary files (commit messages, test scripts, screenshots) go outside the project, and are deleted
+  after use. Check `git status` before staging.
+- To try a change, use `npm run dev` (or the `dev` launch entry) and the pages it affects, on a phone-width
+  window too. Never use real credentials in a test, and don't post, edit or delete real statuses while
+  verifying: the owner tests those.
+- The owner's personal site (chriswatnee.com) reads `/api/users/chris/status`. Don't change that
+  endpoint's address or response shape without asking.
+
 ## Deployment
 
 Cloudflare Pages project `status-rodeo`, connected to the GitHub repo. Every push
