@@ -4,6 +4,7 @@
   "private": true,
   "description": "A personal status-sharing site: short statuses, an RSS feed and a small JSON API.",
   "author": "Chris Watnee",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.12"
